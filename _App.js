@@ -1,4 +1,4 @@
-// App.js  (Driver app — final with FL)
+// App.js
 import React from 'react';
 import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -8,7 +8,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { store } from './src/store';
 import RootNavigator from './src/navigation/RootNavigator';
 import { DriverSocketProvider } from './src/services/DriverSocketContext';
-import { FLProviderWrapper } from './src/services/fl/FLProviderWrapper';
 
 export default function App() {
   return (
@@ -16,12 +15,10 @@ export default function App() {
       <Provider store={store}>
         <SafeAreaProvider>
           <DriverSocketProvider>
-            <FLProviderWrapper>        
-              <NavigationContainer>
-                <StatusBar barStyle="light-content" backgroundColor="#0A0A0A" />
-                <RootNavigator />
-              </NavigationContainer>
-            </FLProviderWrapper>
+            <NavigationContainer>
+              <StatusBar barStyle="light-content" backgroundColor="#0A0A0A" />
+              <RootNavigator />
+            </NavigationContainer>
           </DriverSocketProvider>
         </SafeAreaProvider>
       </Provider>

@@ -17,6 +17,11 @@ export default function IncomingRideModal({ navigation }) {
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const timerRef = useRef(null);
 
+  // Get id safely — check multiple field names
+  const rideId = incomingRide?.id 
+            || incomingRide?.rideId 
+            || incomingRide?.orderId; 
+
   useEffect(() => {
     Animated.parallel([
       Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, tension: 60 }),
@@ -39,19 +44,19 @@ export default function IncomingRideModal({ navigation }) {
   };
 
   const handleAccept = async () => {
+    console.log('[Modal] Accepting ride id:', rideId);  
     clearInterval(timerRef.current);
     Vibration.cancel();
-    const result = await dispatch(acceptRide(incomingRide?.id));
+    const result = await dispatch(acceptRide(rideId));
     if (!result.error) navigation.replace('ActiveRide');
     else navigation.goBack();
   };
 
-  const handleReject = async () => {   // ← add async
+  const handleReject = async () => {  
+    console.log('[Modal] Rejecting ride id:', rideId);
     clearInterval(timerRef.current);
     Vibration.cancel();
-    console.log('[Decline] incomingRide:', incomingRide);  
-    console.log('[Decline] ride id:', incomingRide?.id); 
-    await dispatch(rejectRide(incomingRide?.id));  // ← await
+    await dispatch(rejectRide(rideId));
     navigation.goBack();
   };
 

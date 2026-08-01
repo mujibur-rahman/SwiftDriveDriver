@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "SwiftDrive Driver",
+    "name": "SwiftDrive Driver FL",
     "slug": "swiftdrivedriver",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -30,7 +30,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "SwiftDrive needs your location to show you on the map and receive ride requests."
         }
-      ]
+      ],
+      "expo-sqlite"
     ]
   }
 }

@@ -13,6 +13,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setOnlineStatus } from '../../store/slices/driverSlice';
 import { useDriverSocket } from '../../services/DriverSocketContext';
 import api from '../../services/api';
+import { downloadModels, hasLocalModels } from '../../services/fl/ModelManager';
+import { runInference } from '../../services/fl/FLInference';
 
 export default function DriverHomeScreen({ navigation }) {
   const dispatch = useDispatch();
@@ -50,7 +52,7 @@ export default function DriverHomeScreen({ navigation }) {
         hours:    res.data.summary.hoursOnline,
       }));
     } catch (e) {
-      console.warn('Failed to fetch today stats');
+      console.warn('Failed to fetch today stats', e.response?.status, e.response?.data);
     }
   };
 
@@ -112,6 +114,31 @@ export default function DriverHomeScreen({ navigation }) {
         Alert.alert('Navigation unavailable', 'Please install Google Maps.');
       });
   };
+
+  const testModelDownload = async () => {
+    console.log('[Test] Starting model download...');
+    const result = await downloadModels((progress) => {
+      console.log('[Test] Progress:', progress);
+    });
+    console.log('[Test] Download result:', result);
+  };
+
+  const testInference = async () => {
+      const context = {
+        hour:           8,       // 8 AM rush hour
+        day_of_week:    1,       // Monday
+        pickup_lat:     -33.8688,
+        pickup_lng:     151.2093,
+        distance_km:    5.2,
+        online_drivers: 10,
+        active_orders:  8,
+        weather_code:   0,
+      };
+
+      console.log('[Test] Running on-device inference...');
+      const result = await runInference(context);
+      console.log('[Test] Inference result:', JSON.stringify(result, null, 2));
+    };
 
   return (
     <View style={styles.container}>
@@ -179,6 +206,14 @@ export default function DriverHomeScreen({ navigation }) {
             </View>
           ))}
         </View>
+
+        <TouchableOpacity onPress={testModelDownload} style={{padding: 10, backgroundColor: '#333'}}>
+          <Text style={{color: '#FFF'}}>Test FL Download</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={testInference} style={{padding:10, backgroundColor:'#4A9EFF'}}>
+          <Text style={{color:'#FFF'}}>Test Inference</Text>
+        </TouchableOpacity>
 
         {/* Status message */}
         {isOnline ? (

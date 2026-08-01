@@ -16,7 +16,7 @@ import DocumentsScreen         from '../screens/main/DocumentsScreen';
 import PayoutSettingsScreen    from '../screens/main/PayoutSettingsScreen';
 import NotificationsScreen     from '../screens/main/NotificationsScreen';
 import RideHistoryScreen from '../screens/main/RideHistoryScreen';
-
+import FLStatusScreen from '../screens/main/FLStatusScreen';
 
 
 const Stack = createStackNavigator();
@@ -63,6 +63,7 @@ export default function MainNavigator() {
       <Stack.Screen name="PayoutSettings"  component={PayoutSettingsScreen} />
       <Stack.Screen name="Notifications"   component={NotificationsScreen} />
       <Stack.Screen name="RideHistory" component={RideHistoryScreen} />
+      <Stack.Screen name="FLStatus" component={FLStatusScreen} />
       <Stack.Screen
         name="IncomingRide"
         component={IncomingRideModal}

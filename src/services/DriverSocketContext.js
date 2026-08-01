@@ -54,10 +54,15 @@ export const DriverSocketProvider = ({ children }) => {
       }
     });
 
-    socketRef.current.on('ride:new_request', (data) => {
+    // Handle both old and new event names
+    const handleNewRequest = (data) => {
+      console.log('[Socket] ride:new_request received:', JSON.stringify(data));
       dispatch(setIncomingRide(data));
       Vibration.vibrate([0, 400, 200, 400, 200, 400]);
-    });
+    };
+
+    socketRef.current.on('ride:new_request',  handleNewRequest);
+    socketRef.current.on('order:new_request', handleNewRequest);
 
     socketRef.current.on('ride:request_expired',     ()  => dispatch(clearIncomingRide()));
     socketRef.current.on('ride:passenger_cancelled', ()  => {

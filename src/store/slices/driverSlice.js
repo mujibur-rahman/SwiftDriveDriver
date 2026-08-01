@@ -2,24 +2,48 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '../../services/api';
 
-export const acceptRide = createAsyncThunk('driver/acceptRide', async (rideId, { rejectWithValue }) => {
-  try {
-    const res = await api.post(`/rides/${rideId}/accept`);
-    return res.data;
-  } catch (err) {
-    return rejectWithValue(err.response?.data?.message || 'Failed to accept');
-  }
-});
+// export const acceptRide = createAsyncThunk('driver/acceptRide', async (rideId, { rejectWithValue }) => {
+//   try {
+//     const res = await api.post(`/rides/${rideId}/accept`);
+//     return res.data;
+//   } catch (err) {
+//     return rejectWithValue(err.response?.data?.message || 'Failed to accept');
+//   }
+// });
 
-export const rejectRide = createAsyncThunk('driver/rejectRide', async (rideId, { rejectWithValue }) => {
-  try {
-    await api.post(`/rides/${rideId}/reject`);
-    return rideId;
-  } catch (err) {
-    console.warn('[rejectRide] error:', err.response?.data || err.message);
-    return rejectWithValue(err.response?.data?.message);
+// export const rejectRide = createAsyncThunk('driver/rejectRide', async (rideId, { rejectWithValue }) => {
+//   try {
+//     await api.post(`/rides/${rideId}/reject`);
+//     return rideId;
+//   } catch (err) {
+//     console.warn('[rejectRide] error:', err.response?.data || err.message);
+//     return rejectWithValue(err.response?.data?.message);
+//   }
+// });
+
+export const rejectRide = createAsyncThunk('driver/rejectRide', 
+  async (rideId, { rejectWithValue }) => {
+    if (!rideId) return rejectWithValue('No ride ID');  // ← guard
+    try {
+      await api.post(`/rides/${rideId}/reject`);
+      return rideId;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.detail || 'Failed');
+    }
   }
-});
+);
+
+export const acceptRide = createAsyncThunk('driver/acceptRide',
+  async (rideId, { rejectWithValue }) => {
+    if (!rideId) return rejectWithValue('No ride ID');  // ← guard
+    try {
+      const res = await api.post(`/rides/${rideId}/accept`);
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.detail || 'Failed');
+    }
+  }
+);
 
 export const startRide = createAsyncThunk('driver/startRide', async (rideId, { rejectWithValue }) => {
   try {
@@ -89,6 +113,12 @@ const driverSlice = createSlice({
     setActiveRide: (state, action) => {
       state.activeRide = action.payload;
     },
+    clearActiveRide: (state) => {
+      state.activeRide  = null;
+      state.passenger   = null;
+      state.rideStatus  = 'idle';
+      state.incomingRide = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -130,6 +160,7 @@ const driverSlice = createSlice({
 export const {
   setOnlineStatus, setCurrentLocation, setIncomingRide,
   clearIncomingRide, setPassenger, setRideStatus,
-  updateTodayStats, resetActiveRide, setActiveRide, 
+  updateTodayStats, resetActiveRide, setActiveRide,
+  clearActiveRide, 
 } = driverSlice.actions;
 export default driverSlice.reducer;

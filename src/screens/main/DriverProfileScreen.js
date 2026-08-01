@@ -75,6 +75,12 @@ export default function DriverProfileScreen({ navigation }) {
           <MenuItem icon="car-outline"           label="Vehicle Details"  onPress={() => navigation.navigate('VehicleDetails')} />
           <MenuItem icon="file-document-outline" label="Documents"        onPress={() => navigation.navigate('Documents')}     badge="2 pending" />
           <MenuItem icon="bank-outline"          label="Payout Settings"  onPress={() => navigation.navigate('PayoutSettings')} value="Weekly" />
+          <MenuItem
+            icon="brain"
+            label="AI Model Status"
+            onPress={() => navigation.navigate('FLStatus')}
+            value={`v${driver?.modelVersion || 0}`}
+          />
         </View>
       </View>
 
