@@ -49,6 +49,7 @@ export default function DriverLoginScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
         >
           <AuthHeader showBack={false} />
+          
 
           <View className="mb-10 mt-8">
             <Badge

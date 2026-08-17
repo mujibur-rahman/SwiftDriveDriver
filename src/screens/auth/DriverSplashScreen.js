@@ -42,7 +42,7 @@ export default function DriverSplashScreen({ navigation }) {
           opacity,
         }}
       >
-        <AuthHeader showBack={false} absolute={false} />
+        <AuthHeader showBack={false} absolute={false} className="mx-auto" />
         <Badge
           label="DRIVER"
           variant="primary"

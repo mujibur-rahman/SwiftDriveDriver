@@ -67,7 +67,7 @@ export default function AuthHeader({
     <View
       className={`
         z-10 flex-row items-center justify-between
-        ${absolute ? "absolute left-6 right-6" : "px-6"}
+        ${absolute ? "absolute left-6 right-6" : ""}
         ${className}
       `}
       style={absolute ? { top: insets.top } : { paddingTop: insets.top }}
