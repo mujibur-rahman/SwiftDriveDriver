@@ -6,9 +6,10 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "splash": {
-      "backgroundColor": "#0A0A0A"
+      "backgroundColor": "#060E1A"
     },
     "android": {
+      "backgroundColor": "#060E1A",
       "adaptiveIcon": {
         "backgroundColor": "#FF6B35"
       },
@@ -24,6 +25,9 @@
         }
       }
     },
+    "ios": {
+      "backgroundColor": "#060E1A"
+    },
     "plugins": [
       [
         "expo-location",
@@ -31,6 +35,8 @@
           "locationAlwaysAndWhenInUsePermission": "SwiftDrive needs your location to show you on the map and receive ride requests."
         }
       ],
+      "expo-font",
+      "expo-asset",
       "expo-sqlite"
     ]
   }
