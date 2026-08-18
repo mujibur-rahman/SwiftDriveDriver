@@ -1,8 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+// TODO: env দিয়ে manage করুন
 // const BASE_URL = 'http://10.0.2.2:8000/api/v1';
-const BASE_URL = "http://192.168.0.101:3000"; // আপনার URL
+const BASE_URL = "http://192.168.0.101:3000";
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
@@ -21,6 +22,7 @@ const baseQueryWithAuth = async (args, api, extraOptions) => {
 
   if (result.error?.status === 401) {
     await AsyncStorage.multiRemove(["token", "driver"]);
+    // optional: api.dispatch(driverLoggedOut());
   }
 
   return result;
@@ -29,36 +31,6 @@ const baseQueryWithAuth = async (args, api, extraOptions) => {
 export const apiSlice = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithAuth,
-  tagTypes: ["Driver"],
+  tagTypes: ["Driver", "Auth"],
   endpoints: () => ({}),
 });
-
-// // driver-app/src/services/api.js
-// import axios from 'axios';
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// const BASE_URL = 'http://10.0.2.2:8000/api/v1';
-
-// const api = axios.create({
-//   baseURL: BASE_URL,
-//   timeout: 15000,
-//   headers: { 'Content-Type': 'application/json' },
-// });
-
-// api.interceptors.request.use(async (config) => {
-//   const token = await AsyncStorage.getItem('token');
-//   if (token) config.headers.Authorization = `Bearer ${token}`;
-//   return config;
-// });
-
-// api.interceptors.response.use(
-//   (r) => r,
-//   async (err) => {
-//     if (err.response?.status === 401) {
-//       await AsyncStorage.multiRemove(['token', 'driver']);
-//     }
-//     return Promise.reject(err);
-//   },
-// );
-
-// export default api;

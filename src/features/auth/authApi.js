@@ -1,38 +1,43 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { apiSlice } from "@/features/api/apiSlice";
-import { driverLoggedIn, driverLoggedOut } from "./authSlice";
+import { driverLoggedIn } from "@/features/auth/authSlice";
 
 export const authApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     loginDriver: builder.mutation({
       query: ({ phone, password }) => ({
-        url: "/login",
+        url: "/login", // আপনার backend route
         method: "POST",
-        body: { phone, password }, // server maps phone → email
+        body: { phone, password },
       }),
-
-      // optimistic updates
-      async onQueryStarted(arg, { queryFulfilled, dispatch }) {
+      async onQueryStarted(_arg, { queryFulfilled, dispatch }) {
         try {
           const { data } = await queryFulfilled;
           const token = data.accessToken || data.token;
+          const driver = data.driver || data.user;
 
-          await AsyncStorage.setItem("token", token);
-          await AsyncStorage.setItem("driver", JSON.stringify(data.driver));
+          if (token) {
+            await AsyncStorage.setItem("token", token);
+          }
+          if (driver) {
+            await AsyncStorage.setItem("driver", JSON.stringify(driver));
+          }
 
           dispatch(
             driverLoggedIn({
               accessToken: token,
-              driver: data.driver,
+              driver,
             }),
           );
-        } catch (error) {}
+        } catch (_) {
+          // error UI-তে mutation-এর error থেকে handle হবে
+        }
       },
     }),
 
     registerDriver: builder.mutation({
       query: (body) => ({
-        url: "/register", // json-server-auth endpoint ← must match server
+        url: "/register",
         method: "POST",
         body: {
           name: body.name,
@@ -41,23 +46,27 @@ export const authApi = apiSlice.injectEndpoints({
           password: body.password,
         },
       }),
-
-      // optimistic updates
-      async onQueryStarted(arg, { queryFulfilled, dispatch }) {
+      async onQueryStarted(_arg, { queryFulfilled, dispatch }) {
         try {
           const { data } = await queryFulfilled;
           const token = data.accessToken || data.token;
+          const driver = data.driver || data.user;
 
-          await AsyncStorage.setItem("token", token);
-          await AsyncStorage.setItem("driver", JSON.stringify(data.driver));
-
-          dispatch(
-            driverLoggedOut({
-              accessToken: token,
-              driver: data.driver,
-            }),
-          );
-        } catch (error) {}
+          // Register-এর পর auto-login চাইলে:
+          if (token) {
+            await AsyncStorage.setItem("token", token);
+            if (driver) {
+              await AsyncStorage.setItem("driver", JSON.stringify(driver));
+            }
+            dispatch(
+              driverLoggedIn({
+                accessToken: token,
+                driver,
+              }),
+            );
+          }
+          // Auto-login না চাইলে শুধু success return — screen থেকে Login-এ navigate
+        } catch (_) {}
       },
     }),
   }),

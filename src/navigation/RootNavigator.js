@@ -20,9 +20,13 @@ import { ActivityIndicator, View } from "react-native";
 
 import AuthNavigator from "@/navigation/AuthNavigator";
 import MainNavigator from "@/navigation/MainNavigator";
-import { loadDriver } from "@/store/slices/authSlice";
 import { recoverActiveRide } from "@/store/slices/driverSlice";
 import { useDriverSocket } from "@/services/DriverSocketContext";
+import {
+  hydrateAuth,
+  selectAuthHydrated,
+  selectIsAuthenticated,
+} from "@/features/auth/authSlice";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,7 +34,8 @@ const Stack = createStackNavigator();
 
 export default function RootNavigator() {
   const dispatch = useDispatch();
-  const { isAuthenticated, loading } = useSelector((s) => s.auth);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const isHydrated = useSelector(selectAuthHydrated);
   const { rideStatus } = useSelector((s) => s.driver);
   const { connect } = useDriverSocket();
   const navigationRef = useRef(null);
@@ -46,35 +51,42 @@ export default function RootNavigator() {
     InstrumentSerif_400Regular_Italic,
   });
 
-  useEffect(() => {
-    dispatch(loadDriver());
-  }, []);
+  // ---------- ALL HOOKS FIRST (no early return before these) ----------
 
+  // 1. Hydrate auth from AsyncStorage
   useEffect(() => {
-    if (isAuthenticated) {
-      connect();
-      // Check for any in-progress ride after reconnecting
-      dispatch(recoverActiveRide()).then((result) => {
-        if (result.payload?.ride) {
-          console.log(
-            "[Recovery] Active ride found:",
-            result.payload.ride.status,
-          );
-          // Navigate to active ride screen
-          navigationRef.current?.navigate("ActiveRide");
-        }
-      });
-    }
-  }, [isAuthenticated]);
+    dispatch(hydrateAuth());
+  }, [dispatch]);
 
+  // 2. Socket + recover active ride when logged in
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    connect();
+
+    dispatch(recoverActiveRide()).then((result) => {
+      if (result.payload?.ride) {
+        console.log(
+          "[Recovery] Active ride found:",
+          result.payload.ride.status,
+        );
+        navigationRef.current?.navigate("ActiveRide");
+      }
+    });
+  }, [isAuthenticated, connect, dispatch]);
+
+  // 3. Hide splash when fonts ready
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
 
-  // Show loading while fonts or auth are still loading
-  if ((!fontsLoaded && !fontError) || loading) {
+  // ---------- THEN conditional UI ----------
+
+  const showLoader = (!fontsLoaded && !fontError) || !isHydrated;
+
+  if (showLoader) {
     return (
       <View className="flex-1 justify-center items-center bg-background">
         <ActivityIndicator size="large" color="#FF6B35" />

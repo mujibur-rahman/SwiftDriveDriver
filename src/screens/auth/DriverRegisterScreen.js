@@ -1,5 +1,5 @@
 // src/screens/auth/DriverRegisterScreen.js
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,16 +8,14 @@ import {
   Platform,
   Alert,
 } from "react-native";
-import { useDispatch, useSelector } from "react-redux";
-import { registerDriver, clearError } from "@/store/slices/authSlice";
+import { useRegisterDriverMutation } from "@/features/auth/authApi";
 import AuthHeader from "@/components/ui/AuthHeader";
 import Heading from "@/components/ui/Heading";
 import AppTextInput from "@/components/ui/AppTextInput";
 import Button from "@/components/ui/Button";
 
 export default function DriverRegisterScreen({ navigation }) {
-  const dispatch = useDispatch();
-  const { loading, error } = useSelector((s) => s.auth);
+  const [registerDriver, { isLoading, error }] = useRegisterDriverMutation();
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -31,24 +29,35 @@ export default function DriverRegisterScreen({ navigation }) {
     vehicleColor: "",
   });
 
-  useEffect(() => {
-    if (error) {
-      Alert.alert("Error", error);
-      dispatch(clearError());
-    }
-  }, [error]);
-
   const updateForm = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
+    // validate name, phone, password, licenseNumber...
     if (!form.name || !form.phone || !form.password || !form.licenseNumber) {
       Alert.alert("Error", "Please fill in all required fields");
       return;
     }
-    console.log(form);
-    dispatch(registerDriver(form));
+
+    if (form.password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      console.log("handleRegister ", form);
+      await registerDriver(form).unwrap();
+      // auto-login হলে RootNavigator main-এ যাবে
+      // না হলে:
+      // Alert.alert("Success", "Account created. Please sign in.");
+      // navigation.navigate("Login");
+    } catch (err) {
+      Alert.alert(
+        "Registration Failed",
+        err?.data.message || err?.error || "Something went wrong",
+      );
+    }
   };
 
   return (
@@ -120,6 +129,7 @@ export default function DriverRegisterScreen({ navigation }) {
             <AppTextInput
               label="Driver's License Number"
               leftIcon="users"
+              required
               value={form.licenseNumber}
               onChangeText={(text) => updateForm("licenseNumber", text)}
               autoCapitalize="characters"
@@ -175,8 +185,8 @@ export default function DriverRegisterScreen({ navigation }) {
           <Button
             variant="primary"
             onPress={handleRegister}
-            loading={loading}
-            disabled={loading}
+            loading={isLoading}
+            disabled={isLoading}
             className="mt-2"
           >
             Create Account

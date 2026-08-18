@@ -1,4 +1,3 @@
-// src/screens/auth/DriverLoginScreen.js
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -9,37 +8,47 @@ import {
   Alert,
   Pressable,
 } from "react-native";
-import { useDispatch, useSelector } from "react-redux";
-import { loginDriver, clearError } from "@/store/slices/authSlice";
 import Heading from "@/components/ui/Heading";
 import Badge from "@/components/ui/Badge";
 import AuthHeader from "@/components/ui/AuthHeader";
 import AppTextInput from "@/components/ui/AppTextInput";
 import Button from "@/components/ui/Button";
-import { useTheme } from "@/theme"; // ← add this
+import { useTheme } from "@/theme";
+import { useLoginDriverMutation } from "@/features/auth/authApi";
 
 export default function DriverLoginScreen({ navigation }) {
-  const dispatch = useDispatch();
-  const { loading: isLoading, error } = useSelector((s) => s.auth);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const { isDark, preference, toggleTheme } = useTheme();
 
-  // Theme
-  const { isDark, preference, toggleTheme, setTheme } = useTheme();
+  const [loginDriver, { isLoading, error, isSuccess }] =
+    useLoginDriverMutation();
 
   useEffect(() => {
     if (error) {
-      Alert.alert("Login Failed", error);
-      dispatch(clearError());
+      const msg =
+        error?.data?.message ||
+        error?.error ||
+        "Login failed. Please try again.";
+      Alert.alert("Login Failed", String(msg));
     }
   }, [error]);
 
-  const handleLogin = () => {
-    if (!phone || !password) {
+  // RootNavigator auth state দেখে auto navigate করবে;
+  // চাইলে এখানেও navigation.replace("Main") করতে পারেন
+
+  const handleLogin = async () => {
+    if (!phone.trim() || !password) {
       Alert.alert("Error", "Please fill all fields");
       return;
     }
-    dispatch(loginDriver({ phone, password }));
+    try {
+      console.log('handleLogin ', {phone, password});
+      await loginDriver({ phone: phone.trim(), password }).unwrap();
+      // success → authSlice update → RootNavigator switch
+    } catch (_) {
+      // error already handled in useEffect
+    }
   };
 
   return (
@@ -55,7 +64,7 @@ export default function DriverLoginScreen({ navigation }) {
         >
           <AuthHeader showBack={false} />
 
-          {/* ========== TEMP: Theme test button (remove later) ========== */}
+          {/* TEMP theme test — পরে সরান */}
           <Pressable
             onPress={toggleTheme}
             className="self-end mb-4 px-3 py-2 rounded-xl bg-card border border-border"
@@ -64,7 +73,6 @@ export default function DriverLoginScreen({ navigation }) {
               {isDark ? "🌙 Dark" : "☀️ Light"} · {preference}
             </Text>
           </Pressable>
-          {/* ============================================================ */}
 
           <View className="mb-10 mt-8">
             <Badge
@@ -73,7 +81,6 @@ export default function DriverLoginScreen({ navigation }) {
               uppercase
               className="mb-4"
             />
-
             <Heading
               title="Start Driving 🚗"
               subtitle="Sign in to your driver account"
