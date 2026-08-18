@@ -4,13 +4,13 @@
 
 @import "nativewind/theme";
 
+/* 1) @theme → generates utilities like bg-background, text-primary */
 @theme {
   --color-background: #060e1a;
   --color-background-secondary: #0d1e32;
   --color-background-muted: #162a44;
   --color-card: #0d1e32;
   --color-badge: #0d1e32;
-
   --color-avatar: #1b1e27;
 
   --color-foreground: #f0f9ff;
@@ -65,39 +65,36 @@
   --spacing-30: 120px;
 }
 
-/* https://colorwind.dev/app */
-/* @media (prefers-color-scheme: light) {
-  @theme {
-    --color-background: #FFFFFF;
-    --color-background-secondary: #F0F9FF;
-    --color-background-muted: #E0F2FE;
-    --color-card: #FFFFFF;
-    --color-badge: #FFFFFF;
-    
-    --color-avatar: #1b1e27;
+/* 2) :root → REQUIRED for VariableContextProvider runtime override */
+:root {
+  --color-background: #060e1a;
+  --color-background-secondary: #0d1e32;
+  --color-background-muted: #162a44;
+  --color-card: #0d1e32;
+  --color-badge: #0d1e32;
+  --color-avatar: #1b1e27;
 
-    --color-foreground: #0F172A;  
-    --color-foreground-secondary: #334155;
-    --color-foreground-muted: #64748B;
-    --color-card-foreground: #0F172A;
+  --color-foreground: #f0f9ff;
+  --color-foreground-secondary: #bae6fd;
+  --color-foreground-muted: #7dd3fc;
+  --color-card-foreground: #f0f9ff;
 
-    --color-primary: #0EA5E9;
-    --color-primary-foreground: #FFFFFF;
+  --color-primary: #38bdf8;
+  --color-primary-foreground: #060e1a;
 
-    --color-secondary: #E0F2FE;
-    --color-secondary-foreground: #0369A1;
+  --color-secondary: #1e3a5f;
+  --color-secondary-foreground: #bae6fd;
 
-    --color-border: #BAE6FD;
-    --color-input: #F0F9FF;
-    --color-ring: #0EA5E9;
+  --color-border: #1e3a5f;
+  --color-input: #162a44;
+  --color-ring: #38bdf8;
 
-    --color-success: #16A34A;
-    --color-warning: #D97706;
-    --color-error: #DC2626;
-    --color-info: #2563EB;
-    --color-accent: #d4af6a;
-  }
-} */
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+  --color-info: #60a5fa;
+  --color-accent: #d4af6a;
+}
 
 @layer components {
   .logo-avatar {

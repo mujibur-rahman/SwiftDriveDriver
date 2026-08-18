@@ -1,6 +1,7 @@
 // src/components/ui/AppSwitch.jsx
 import React from "react";
 import { Switch } from "react-native";
+import { useTheme } from "@/theme";
 
 /**
  * Themed Switch
@@ -9,8 +10,8 @@ import { Switch } from "react-native";
  * - value: boolean
  * - onValueChange: (value: boolean) => void
  * - disabled?: boolean
- * - size?: "sm" | "md"   (visual scale via transform)
- * - activeColor?: string  (default primary #38BDF8)
+ * - size?: "sm" | "md"
+ * - activeColor?: string
  * - inactiveTrack?: string
  * - inactiveThumb?: string
  */
@@ -19,12 +20,19 @@ export default function AppSwitch({
   onValueChange,
   disabled = false,
   size = "md",
-  activeColor = "#38BDF8",
-  inactiveTrack = "#1E3A5F",
-  inactiveThumb = "#7DD3FC",
+  activeColor,
+  inactiveTrack,
+  inactiveThumb,
   ...props
 }) {
+  const { colors, isDark } = useTheme();
   const scale = size === "sm" ? 0.85 : 1;
+
+  const resolvedActive = activeColor ?? colors.primary;
+  const resolvedInactiveTrack =
+    inactiveTrack ?? (isDark ? "#1E3A5F" : "#BAE6FD");
+  const resolvedInactiveThumb =
+    inactiveThumb ?? (isDark ? "#7DD3FC" : "#64748B");
 
   return (
     <Switch
@@ -32,11 +40,11 @@ export default function AppSwitch({
       onValueChange={onValueChange}
       disabled={disabled}
       trackColor={{
-        false: inactiveTrack,
-        true: `${activeColor}80`, // 50% opacity when on
+        false: resolvedInactiveTrack,
+        true: `${resolvedActive}80`,
       }}
-      thumbColor={value ? activeColor : inactiveThumb}
-      ios_backgroundColor={inactiveTrack}
+      thumbColor={value ? resolvedActive : resolvedInactiveThumb}
+      ios_backgroundColor={resolvedInactiveTrack}
       style={{ transform: [{ scaleX: scale }, { scaleY: scale }] }}
       {...props}
     />

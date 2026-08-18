@@ -5,12 +5,18 @@ import api from '../../services/api';
 
 export const loginDriver = createAsyncThunk('auth/login', async ({ phone, password }, { rejectWithValue }) => {
   try {
-    const res = await api.post('/auth/driver/login', { phone, password });
+    // const res = await api.post('/auth/driver/login', { phone, password });
+    console.log('res ', { phone, password });
+    const res = await api.post('/login', { phone, password });
+    // await AsyncStorage.setItem('token', res.data.token);
+    // await AsyncStorage.setItem('driver', JSON.stringify(res.data.driver));
+    console.log('res after await', res);
     await AsyncStorage.setItem('token', res.data.token);
-    await AsyncStorage.setItem('driver', JSON.stringify(res.data.driver));
+    await AsyncStorage.setItem('driver', JSON.stringify(res.data.user.name));
     return res.data;
   } catch (err) {
-    return rejectWithValue(err.response?.data?.message || 'Login failed');
+    console.log('err ', err);
+    return rejectWithValue(err.response?.data?.message || 'Login failed fdsf');
   }
 });
 
