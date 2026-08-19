@@ -91,3 +91,19 @@ src/
     return rejectWithValue(err.response?.data?.message || 'Login failed fdsf');
   }
 }); -->
+
+
+<!-- @screens/Attendance/AttendanceScreen.tsx এবং @services/attendanceApi.js দেখো।
+
+এই screen-এ এখন Axios দিয়ে fetch করা হচ্ছে attendance list।
+আমি চাই:
+1. একটা নতুন RTK Query API slice তৈরি হোক (attendanceApi.ts), 
+   যেটা @store/api/baseApi.ts থেকে injectEndpoints করবে
+2. getAttendanceByClass query endpoint বানাও, classId parameter নেবে
+3. Screen-এ useGetAttendanceByClassQuery hook ব্যবহার করো, 
+   পুরোনো useEffect + Axios call বাদ দাও
+4. Loading এবং error state আগের মতোই UI-তে দেখাও (isLoading, isError)
+5. পুরোনো Redux slice-এর attendance reducer বদলিও না, 
+   শুধু এই একটা screen-এর data fetching layer বদলাও
+
+কাজ শেষে diff দেখাও, আমি review করবো। -->
