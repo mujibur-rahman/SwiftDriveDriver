@@ -1,7 +1,8 @@
 // src/components/ui/Badge.jsx
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text } from "react-native";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
+import { useTheme } from "@/theme";
 
 /**
  * Reusable badge / chip
@@ -10,57 +11,52 @@ import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
  * - children / label: string | ReactNode
  * - variant?: "success" | "primary" | "warning" | "error" | "info" | "muted"
  * - size?: "sm" | "md"
- * - shape?: "rounded" | "pill"     // rounded = md corners, pill = full
- * - icon?: string                  // MaterialCommunityIcons name
+ * - shape?: "rounded" | "pill"
+ * - icon?: string
  * - iconSize?: number
  * - uppercase?: boolean
- * - bordered?: boolean             // show border (default true for non-pill success label style)
+ * - bordered?: boolean
  * - className?: string
  * - textClassName?: string
  */
-const VARIANTS = {
+
+const VARIANT_CLASSES = {
   success: {
     wrap: "bg-success/15 border-success/25",
     text: "text-success",
-    icon: "#34D399",
   },
   primary: {
     wrap: "bg-primary/15 border-primary/25",
     text: "text-primary",
-    icon: "#38BDF8",
   },
   warning: {
     wrap: "bg-warning/15 border-warning/25",
     text: "text-warning",
-    icon: "#FBBF24",
   },
   error: {
     wrap: "bg-error/15 border-error/25",
     text: "text-error",
-    icon: "#F87171",
   },
   info: {
     wrap: "bg-info/15 border-info/25",
     text: "text-info",
-    icon: "#60A5FA",
   },
   muted: {
     wrap: "bg-background-muted border-border",
     text: "text-foreground-muted",
-    icon: "#7DD3FC",
   },
 };
 
 const SIZES = {
   sm: {
     pad: "px-2 py-0.5",
-    text: "text-[11px]",
+    text: "text-[10px]",
     icon: 12,
     gap: "gap-1",
   },
   md: {
     pad: "px-2.5 py-1",
-    text: "text-[10px]",
+    text: "text-[11px]",
     icon: 12,
     gap: "gap-1",
   },
@@ -79,9 +75,25 @@ export default function Badge({
   className = "",
   textClassName = "",
 }) {
-  const v = VARIANTS[variant] || VARIANTS.success;
+  const { colors, isDark } = useTheme();
+
+  // Icon colors from theme hex (className can't style vector icons)
+  const iconColors = useMemo(
+    () => ({
+      success: isDark ? "#34D399" : "#16A34A",
+      primary: colors?.primary ?? (isDark ? "#38BDF8" : "#0EA5E9"),
+      warning: isDark ? "#FBBF24" : "#D97706",
+      error: isDark ? "#F87171" : "#DC2626",
+      info: isDark ? "#60A5FA" : "#2563EB",
+      muted: isDark ? "#7DD3FC" : "#64748B",
+    }),
+    [colors?.primary, isDark],
+  );
+
+  const v = VARIANT_CLASSES[variant] || VARIANT_CLASSES.success;
   const s = SIZES[size] || SIZES.md;
   const content = children ?? label;
+  const iconColor = iconColors[variant] || iconColors.success;
 
   return (
     <View
@@ -95,10 +107,10 @@ export default function Badge({
       `}
     >
       {icon ? (
-        <Icon name={icon} size={iconSize ?? s.icon} color={v.icon} />
+        <Icon name={icon} size={iconSize ?? s.icon} color={iconColor} />
       ) : null}
 
-      {typeof content === "string" ? (
+      {typeof content === "string" || typeof content === "number" ? (
         <Text
           className={`
             font-inter-bold
@@ -108,7 +120,7 @@ export default function Badge({
             ${textClassName}
           `}
         >
-          {uppercase ? content.toUpperCase() : content}
+          {uppercase ? String(content).toUpperCase() : String(content)}
         </Text>
       ) : (
         content

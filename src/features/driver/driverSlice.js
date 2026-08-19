@@ -7,9 +7,6 @@ const initialState = {
   activeRide: null, // accepted/ongoing ride
   rideStatus: "idle", // idle | incoming | accepted | arrived | ongoing | completed
   passenger: null,
-  loading: false,
-  error: null,
-  todayStats: { trips: 0, earnings: 0, hours: 0 },
 };
 
 const driverSlice = createSlice({
@@ -20,3 +17,4 @@ const driverSlice = createSlice({
 
 export const {} = driverSlice.actions;
 export default driverSlice.reducer;
+

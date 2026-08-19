@@ -17,6 +17,7 @@ import Button from "@/components/ui/Button";
 import ProfileHeader from "@/components/ui/ProfileHeader";
 import ScreenHeader from "@/components/ui/ScreenHeader";
 import Heading from "@/components/ui/Heading";
+import StatRow from "@/components/ui/StatRow";
 
 const MenuItem = ({
   icon,
@@ -39,24 +40,21 @@ const MenuItem = ({
 
   return (
     <TouchableOpacity
-      className={`flex-row items-center gap-3 px-4 py-3.5 ${
-        !isLast ? "border-b border-border" : ""
-      }`}
+      className={`flex-row items-center gap-3 px-4 py-3.5 ${!isLast ? "border-b border-border" : ""
+        }`}
       onPress={onPress}
       activeOpacity={0.7}
       disabled={!onPress}
     >
       <View
-        className={`h-9 w-9 items-center justify-center rounded-full ${
-          error ? "bg-error/15" : "bg-background-muted"
-        }`}
+        className={`h-9 w-9 items-center justify-center rounded-full ${error ? "bg-error/15" : "bg-background-muted"
+          }`}
       >
         <Icon name={icon} size={18} color={iconColor} />
       </View>
       <Text
-        className={`flex-1 text-[15px] font-inter-medium ${
-          error ? "text-error" : "text-foreground"
-        }`}
+        className={`flex-1 text-[15px] font-inter-medium ${error ? "text-error" : "text-foreground"
+          }`}
       >
         {label}
       </Text>
@@ -173,7 +171,7 @@ export default function DriverProfileScreen({ navigation }) {
         />
 
         {/* ── Stats (driver metrics — same data as before) ── */}
-        <View className="mx-5 mt-5 flex-row items-center justify-around rounded-2xl border border-border bg-card py-4">
+        {/* <View className="mx-5 mt-5 flex-row items-center justify-around rounded-2xl border border-border bg-card py-4">
           {[
             {
               label: "Rating",
@@ -200,7 +198,16 @@ export default function DriverProfileScreen({ navigation }) {
               </View>
             </React.Fragment>
           ))}
-        </View>
+        </View> */}
+
+        <StatRow
+          className="mx-5 mt-5 border border-border bg-card py-4"
+          items={[
+            { label: "Rating", value: driver?.rating != null ? String(driver.rating) : "4.92" },
+            { label: "Trips", value: driver?.totalTrips ?? 0 },
+            { label: "Accept", value: `${driver?.acceptanceRate ?? 100}%` },
+          ]}
+        />
 
         {/* ── Action buttons ── */}
         <View className="mx-5 mt-4 flex-row gap-3">
@@ -350,7 +357,7 @@ export default function DriverProfileScreen({ navigation }) {
           </View>
         </View>
 
-        <Heading subtitle="SwiftDrive Driver v1.0.0" size="sm" align="center" className="mt-4"  />
+        <Heading subtitle="SwiftDrive Driver v1.0.0" size="sm" align="center" className="mt-4" />
       </ScrollView>
     </View>
   );

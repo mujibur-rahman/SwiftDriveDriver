@@ -1,108 +1,145 @@
 // src/screens/main/DriverHomeScreen.js
-import React, { useEffect, useRef, useState } from 'react';
-// import {
-//   View, Text, TouchableOpacity, StyleSheet,
-//   Animated, Switch, Platform,
-// } from 'react-native';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Switch, Platform, Linking, Alert } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import { LinearGradient } from 'expo-linear-gradient';
-import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
-import * as Location from 'expo-location';
-import { useDispatch, useSelector } from 'react-redux';
-import { setOnlineStatus } from '../../store/slices/driverSlice';
-import { useDriverSocket } from '../../services/DriverSocketContext';
-import api from '../../services/api';
-import { downloadModels, hasLocalModels } from '../../services/fl/ModelManager';
-import { runInference } from '../../services/fl/FLInference';
+import React, { useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Animated,
+  Switch,
+  Platform,
+  Linking,
+  Alert,
+} from "react-native";
+import MapView, { Marker } from "react-native-maps";
+import { LinearGradient } from "expo-linear-gradient";
+import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
+import * as Location from "expo-location";
+import { useDispatch, useSelector } from "react-redux";
+import { setOnlineStatus } from "@/store/slices/driverSlice";
+import { useDriverSocket } from "@/services/DriverSocketContext";
+import {
+  useGetTodayEarningsQuery,
+  useUpdateDriverStatusMutation,
+} from "@/features/driver/driverApi";
+import { downloadModels } from "@/services/fl/ModelManager";
+import { runInference } from "@/services/fl/FLInference";
+import { useTheme } from "@/theme";
+import QuickActionsRow from "@/components/ui/QuickActionsRow";
+import StatRow from "@/components/ui/StatRow";
 
 export default function DriverHomeScreen({ navigation }) {
   const dispatch = useDispatch();
-  const { isOnline, currentLocation, todayStats, rideStatus, incomingRide } = useSelector((s) => s.driver);
+  const { isOnline, currentLocation, rideStatus, incomingRide } = useSelector(
+    (s) => s.driver,
+  );
   const { driver, isAuthenticated } = useSelector((s) => s.auth);
   const { goOnline, goOffline, updateLocation } = useDriverSocket();
-  const mapRef    = useRef(null);
+  const { colors, isDark } = useTheme();
+  const mapRef = useRef(null);
   const slideAnim = useRef(new Animated.Value(100)).current;
   const locationSub = useRef(null);
 
+  const primary = colors?.primary ?? "#38BDF8";
+  const mutedHex = isDark ? "#7DD3FC" : "#64748B";
+
+  const { data: earningsData } = useGetTodayEarningsQuery("today", {
+    skip: !isAuthenticated,
+  });
+  const [updateDriverStatus] = useUpdateDriverStatusMutation();
+
+  const todayStats = {
+    trips: earningsData?.summary?.periodTrips ?? 0,
+    earnings: earningsData?.summary?.totalBalance ?? 0,
+    hours: earningsData?.summary?.hoursOnline ?? 0,
+  };
+
   useEffect(() => {
-    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 50 }).start();
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 50,
+    }).start();
     requestLocationPermission();
-    return () => { locationSub.current?.remove(); };
+    return () => {
+      locationSub.current?.remove();
+    };
   }, []);
 
   useEffect(() => {
-    if (incomingRide && rideStatus === 'incoming') navigation.navigate('IncomingRide');
+    if (incomingRide && rideStatus === "incoming") {
+      navigation.navigate("IncomingRide");
+    }
   }, [incomingRide, rideStatus]);
 
   useEffect(() => {
-    if (rideStatus === 'accepted' || rideStatus === 'ongoing') navigation.navigate('ActiveRide');
-  }, [rideStatus]);
-
-  useEffect(() => {
-    if (isAuthenticated) fetchTodayStats();
-  }, [isAuthenticated]);
-
-  const fetchTodayStats = async () => {
-    try {
-      const res = await api.get('/drivers/earnings?period=today');
-      dispatch(updateTodayStats({
-        trips:    res.data.summary.periodTrips,
-        earnings: res.data.summary.totalBalance,
-        hours:    res.data.summary.hoursOnline,
-      }));
-    } catch (e) {
-      console.warn('Failed to fetch today stats', e.response?.status, e.response?.data);
+    if (rideStatus === "accepted" || rideStatus === "ongoing") {
+      navigation.navigate("ActiveRide");
     }
-  };
+  }, [rideStatus]);
 
   const requestLocationPermission = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return;
+      if (status !== "granted") return;
       await startTracking();
-    } catch (e) { console.warn('Location error:', e.message); }
+    } catch (e) {
+      console.warn("Location error:", e.message);
+    }
   };
 
   const startTracking = async () => {
-    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-    const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+    const loc = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+    const coords = {
+      latitude: loc.coords.latitude,
+      longitude: loc.coords.longitude,
+    };
     updateLocation(coords);
-    mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.01, longitudeDelta: 0.01 }, 800);
+    mapRef.current?.animateToRegion(
+      { ...coords, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+      800,
+    );
 
     locationSub.current = await Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.Balanced, timeInterval: 5000, distanceInterval: 15 },
-      (l) => updateLocation({ latitude: l.coords.latitude, longitude: l.coords.longitude }),
+      {
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: 5000,
+        distanceInterval: 15,
+      },
+      (l) =>
+        updateLocation({
+          latitude: l.coords.latitude,
+          longitude: l.coords.longitude,
+        }),
     );
   };
 
   const toggleOnline = async (val) => {
     dispatch(setOnlineStatus(val));
     try {
-      // REST call — reliable, works regardless of socket state
-      console.log('[Toggle] sending to API:', { isOnline: val });
-      await api.patch('/drivers/me', { isOnline: val });
-      // Socket event — for real-time dispatch system
-      if (val) goOnline(); else goOffline();
+      console.log("[Toggle] sending to API:", { isOnline: val });
+      await updateDriverStatus({ isOnline: val }).unwrap();
+      if (val) goOnline();
+      else goOffline();
       console.log(`[Driver] is_online set to ${val}`);
     } catch (e) {
-      console.warn('[Driver] Failed to update online status:', e.message);
-      // Revert UI if API call failed
+      console.warn(
+        "[Driver] Failed to update online status:",
+        e?.data?.message || e.message,
+      );
       dispatch(setOnlineStatus(!val));
     }
   };
 
   const openNavigation = () => {
     if (!currentLocation) {
-      Alert.alert('Location unavailable', 'Waiting for GPS signal...');
+      Alert.alert("Location unavailable", "Waiting for GPS signal...");
       return;
     }
 
     const { latitude, longitude } = currentLocation;
-
-    // Google Maps turn-by-turn navigation
     const googleMapsUrl = `google.navigation:q=${latitude},${longitude}&mode=d`;
-    // Generic geo URI fallback (works without Google Maps)
     const geoUrl = `geo:${latitude},${longitude}?q=${latitude},${longitude}`;
 
     Linking.canOpenURL(googleMapsUrl)
@@ -111,222 +148,287 @@ export default function DriverHomeScreen({ navigation }) {
         return Linking.openURL(geoUrl);
       })
       .catch(() => {
-        Alert.alert('Navigation unavailable', 'Please install Google Maps.');
+        Alert.alert("Navigation unavailable", "Please install Google Maps.");
       });
   };
 
   const testModelDownload = async () => {
-    console.log('[Test] Starting model download...');
+    console.log("[Test] Starting model download...");
     const result = await downloadModels((progress) => {
-      console.log('[Test] Progress:', progress);
+      console.log("[Test] Progress:", progress);
     });
-    console.log('[Test] Download result:', result);
+    console.log("[Test] Download result:", result);
   };
 
   const testInference = async () => {
-      const context = {
-        hour:           8,       // 8 AM rush hour
-        day_of_week:    1,       // Monday
-        pickup_lat:     -33.8688,
-        pickup_lng:     151.2093,
-        distance_km:    5.2,
-        online_drivers: 10,
-        active_orders:  8,
-        weather_code:   0,
-      };
-
-      console.log('[Test] Running on-device inference...');
-      const result = await runInference(context);
-      console.log('[Test] Inference result:', JSON.stringify(result, null, 2));
+    const context = {
+      hour: 8,
+      day_of_week: 1,
+      pickup_lat: -33.8688,
+      pickup_lng: 151.2093,
+      distance_km: 5.2,
+      online_drivers: 10,
+      active_orders: 8,
+      weather_code: 0,
     };
 
+    console.log("[Test] Running on-device inference...");
+    const result = await runInference(context);
+    console.log("[Test] Inference result:", JSON.stringify(result, null, 2));
+  };
+
+  const gradTop = isDark
+    ? ["rgba(6,14,26,0.95)", "rgba(6,14,26,0.7)", "transparent"]
+    : ["rgba(255,255,255,0.95)", "rgba(255,255,255,0.75)", "transparent"];
+
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-background">
       <MapView
         ref={mapRef}
-        style={styles.map}
+        style={{ flex: 1 }}
         showsUserLocation
         showsMyLocationButton={false}
         initialRegion={{
-          latitude:  currentLocation?.latitude  || -33.8688,
+          latitude: currentLocation?.latitude || -33.8688,
           longitude: currentLocation?.longitude || 151.2093,
-          latitudeDelta: 0.015, longitudeDelta: 0.015,
+          latitudeDelta: 0.015,
+          longitudeDelta: 0.015,
         }}
       >
         {currentLocation && (
           <Marker coordinate={currentLocation}>
-            <View style={[styles.driverMarker, isOnline && styles.driverMarkerOnline]}>
-              <Text style={styles.driverMarkerIcon}>🚗</Text>
+            <View
+              className={`h-11 w-11 items-center justify-center rounded-full border-2 ${isOnline
+                ? "border-primary bg-primary/30"
+                : "border-border bg-background-muted"
+                }`}
+            >
+              <Text className="text-[22px]">🚗</Text>
             </View>
           </Marker>
         )}
       </MapView>
 
-      {/* Top overlay */}
       <LinearGradient
-        colors={['rgba(10,10,10,0.95)', 'rgba(10,10,10,0.7)', 'transparent']}
-        style={styles.topOverlay}
+        colors={gradTop}
+        className={`absolute left-0 right-0 top-0 px-5 pb-10 ${Platform.OS === "android" ? "pt-10" : "pt-12"
+          }`}
         pointerEvents="box-none"
       >
-        <View style={styles.topBar}>
+        <View className="flex-row items-center justify-between">
           <View>
-            <Text style={styles.greeting}>Hello, {driver?.name?.split(' ')[0] || 'Driver'}</Text>
-            <View style={[styles.statusPill, isOnline ? styles.statusOnline : styles.statusOffline]}>
-              <View style={[styles.statusDot, { backgroundColor: isOnline ? '#00D95F' : '#666' }]} />
-              <Text style={[styles.statusText, { color: isOnline ? '#00D95F' : '#888' }]}>
-                {isOnline ? 'Online' : 'Offline'}
+            <Text className="text-lg font-inter-bold text-foreground">
+              Hello, {driver?.name?.split(" ")[0] || "Driver"}
+            </Text>
+            <View
+              className={`mt-1 flex-row items-center gap-1.5 rounded-full border px-2.5 py-1 ${isOnline
+                ? "border-success/30 bg-success/10"
+                : "border-border bg-background-muted"
+                }`}
+            >
+              <View
+                className={`h-2 w-2 rounded-full ${isOnline ? "bg-success" : "bg-foreground-muted"
+                  }`}
+              />
+              <Text
+                className={`text-[13px] font-inter-semibold ${isOnline ? "text-success" : "text-foreground-muted"
+                  }`}
+              >
+                {isOnline ? "Online" : "Offline"}
               </Text>
             </View>
           </View>
-          <View style={styles.onlineToggle}>
-            <Text style={styles.toggleLabel}>{isOnline ? 'Go Offline' : 'Go Online'}</Text>
+
+          <View className="flex-row items-center gap-2">
+            <Text className="text-[13px] font-inter text-foreground-muted">
+              {isOnline ? "Go Offline" : "Go Online"}
+            </Text>
             <Switch
               value={isOnline}
               onValueChange={toggleOnline}
-              trackColor={{ false: '#333', true: '#FF6B3580' }}
-              thumbColor={isOnline ? '#FF6B35' : '#555'}
+              trackColor={{
+                false: isDark ? "#1E3A5F" : "#BAE6FD",
+                true: `${primary}80`,
+              }}
+              thumbColor={isOnline ? primary : mutedHex}
             />
           </View>
         </View>
       </LinearGradient>
 
-      {/* Bottom panel */}
-      <Animated.View style={[styles.panel, { transform: [{ translateY: slideAnim }] }]}>
-        {/* Stats */}
-        <View style={styles.statsRow}>
+      <Animated.View
+        className="absolute bottom-0 left-0 right-0 gap-4 rounded-t-3xl border-t border-border bg-card px-5 pb-28 pt-5"
+        style={{
+          transform: [{ translateY: slideAnim }],
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: isDark ? 0.5 : 0.15,
+          elevation: 20,
+        }}
+      >
+        <View className="flex-row gap-2.5">
           {[
-            { label: 'Trips Today',      value: todayStats.trips,                    icon: 'car' },
-            { label: "Today's Earnings", value: `$${todayStats.earnings.toFixed(2)}`, icon: 'cash' },
-            { label: 'Hours Online',     value: `${todayStats.hours.toFixed(1)}h`,    icon: 'clock-outline' },
+            { label: "Trips Today", value: todayStats.trips, icon: "car" },
+            {
+              label: "Today's Earnings",
+              value: `$${Number(todayStats.earnings).toFixed(2)}`,
+              icon: "cash",
+            },
+            {
+              label: "Hours Online",
+              value: `${Number(todayStats.hours).toFixed(1)}h`,
+              icon: "clock-outline",
+            },
           ].map((stat) => (
-            <View key={stat.label} style={styles.statCard}>
-              <Icon name={stat.icon} size={20} color="#FF6B35" />
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
+            <View
+              key={stat.label}
+              className="flex-1 items-center gap-1 rounded-2xl border border-border bg-background-muted p-3.5"
+            >
+              <Icon name={stat.icon} size={20} color={primary} />
+              <Text className="mt-1 text-base font-inter-bold text-foreground">
+                {stat.value}
+              </Text>
+              <Text className="text-center text-[10px] font-inter text-foreground-muted">
+                {stat.label}
+              </Text>
             </View>
           ))}
         </View>
 
-        <TouchableOpacity onPress={testModelDownload} style={{padding: 10, backgroundColor: '#333'}}>
-          <Text style={{color: '#FFF'}}>Test FL Download</Text>
+        <TouchableOpacity
+          onPress={testModelDownload}
+          className="items-center rounded-xl bg-background-muted p-2.5"
+        >
+          <Text className="font-inter-medium text-foreground">
+            Test FL Download
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={testInference} style={{padding:10, backgroundColor:'#4A9EFF'}}>
-          <Text style={{color:'#FFF'}}>Test Inference</Text>
+        <TouchableOpacity
+          onPress={testInference}
+          className="items-center rounded-xl bg-info p-2.5"
+        >
+          <Text className="font-inter-medium text-white">Test Inference</Text>
         </TouchableOpacity>
 
-        {/* Status message */}
         {isOnline ? (
-          <View style={styles.onlineMessage}>
-            <View style={styles.onlinePulse}><View style={styles.onlinePulseDot} /></View>
-            <Text style={styles.onlineText}>Waiting for ride requests...</Text>
+          <View className="flex-row items-center gap-3 rounded-xl border border-primary/30 bg-primary/10 p-3.5">
+            <View className="h-5 w-5 items-center justify-center rounded-full bg-primary/30">
+              <View className="h-2.5 w-2.5 rounded-full bg-primary" />
+            </View>
+            <Text className="text-sm font-inter-medium text-primary">
+              Waiting for ride requests...
+            </Text>
           </View>
         ) : (
-          <View style={styles.offlineMessage}>
-            <Text style={styles.offlineText}>You are offline. Toggle to start receiving requests.</Text>
+          <View className="items-center rounded-xl bg-background-muted p-3.5">
+            <Text className="text-center text-sm font-inter text-foreground-muted">
+              You are offline. Toggle to start receiving requests.
+            </Text>
           </View>
         )}
 
-        {/* Quick actions */}
-        <View style={styles.actions}>
+        {/* <View className="flex-row justify-between">
           {[
-            { icon: 'chart-bar',        label: 'Earnings',  onPress: () => navigation.navigate('Earnings') },
-            { icon: 'history', label: 'History', onPress: () => navigation.navigate('RideHistory') },
-            { icon: 'navigation-outline', label: 'Navigate', onPress: openNavigation },
-            { icon: 'account-outline',  label: 'Profile',   onPress: () => navigation.navigate('Profile') },
+            {
+              icon: "chart-bar",
+              label: "Earnings",
+              onPress: () => navigation.navigate("Earnings"),
+            },
+            {
+              icon: "history",
+              label: "History",
+              onPress: () => navigation.navigate("RideHistory"),
+            },
+            {
+              icon: "navigation-outline",
+              label: "Navigate",
+              onPress: openNavigation,
+            },
+            {
+              icon: "account-outline",
+              label: "Profile",
+              onPress: () => navigation.navigate("Profile"),
+            },
           ].map((a) => (
-            <TouchableOpacity key={a.label} style={styles.actionBtn} onPress={a.onPress}>
-              <Icon name={a.icon} size={22} color="#FF6B35" />
-              <Text style={styles.actionText}>{a.label}</Text>
+            <TouchableOpacity
+              key={a.label}
+              className="flex-1 items-center gap-1.5"
+              onPress={a.onPress}
+            >
+              <Icon name={a.icon} size={22} color={primary} />
+              <Text className="text-[11px] font-inter text-foreground-muted">
+                {a.label}
+              </Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </View> */}
 
-        {/* Metrics */}
-        <View style={styles.metricsRow}>
+        <QuickActionsRow
+          items={[
+            {
+              icon: "chart-bar",
+              label: "Earnings",
+              onPress: () => navigation.navigate("Earnings"),
+            },
+            {
+              icon: "history",
+              label: "History",
+              onPress: () => navigation.navigate("RideHistory"),
+            },
+            {
+              icon: "navigation-outline",
+              label: "Navigate",
+              onPress: openNavigation,
+            },
+            {
+              icon: "account-outline",
+              label: "Profile",
+              onPress: () => navigation.navigate("Profile"),
+            },
+          ]}
+        />
+
+        {/* <View className="flex-row items-center rounded-xl bg-background-muted p-3.5">
           {[
-            { label: 'Rating',     value: `⭐ ${driver?.rating || '4.92'}` },
-            { label: 'Acceptance', value: `${driver?.acceptanceRate || 100}%` },
-            { label: 'Completion', value: `${driver?.completionRate || 100}%` },
+            { label: "Rating", value: `⭐ ${driver?.rating || "4.92"}` },
+            {
+              label: "Acceptance",
+              value: `${driver?.acceptanceRate || 100}%`,
+            },
+            {
+              label: "Completion",
+              value: `${driver?.completionRate || 100}%`,
+            },
           ].map((m, i) => (
             <React.Fragment key={m.label}>
-              {i > 0 && <View style={styles.metricDivider} />}
-              <View style={styles.metricItem}>
-                <Text style={styles.metricValue}>{m.value}</Text>
-                <Text style={styles.metricLabel}>{m.label}</Text>
+              {i > 0 && <View className="mx-1 h-8 w-px bg-border" />}
+              <View className="flex-1 items-center gap-1">
+                <Text className="text-base font-inter-bold text-foreground">
+                  {m.value}
+                </Text>
+                <Text className="text-[11px] font-inter text-foreground-muted">
+                  {m.label}
+                </Text>
               </View>
             </React.Fragment>
           ))}
-        </View>
+        </View> */}
+
+        <StatRow
+          items={[
+            { label: "Rating", value: `⭐ ${driver?.rating || "4.92"}` },
+            {
+              label: "Acceptance",
+              value: `${driver?.acceptanceRate || 100}%`,
+            },
+            {
+              label: "Completion",
+              value: `${driver?.completionRate || 100}%`,
+            },
+          ]}
+        />
       </Animated.View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A0A0A' },
-  map: { flex: 1 },
-  topOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    paddingTop: Platform.OS === 'android' ? 40 : 50,
-    paddingHorizontal: 20, paddingBottom: 40,
-  },
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  greeting: { color: '#FFF', fontSize: 18, fontWeight: '700' },
-  statusPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
-    marginTop: 4, borderWidth: 1,
-  },
-  statusOnline:  { backgroundColor: '#00D95F10', borderColor: '#00D95F30' },
-  statusOffline: { backgroundColor: '#66666610', borderColor: '#66666630' },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { fontSize: 13, fontWeight: '600' },
-  onlineToggle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  toggleLabel: { color: '#888', fontSize: 13 },
-  driverMarker: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: '#333', justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: '#555',
-  },
-  driverMarkerOnline: { borderColor: '#FF6B35', backgroundColor: '#FF6B3530' },
-  driverMarkerIcon: { fontSize: 22 },
-  panel: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: '#111', borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 20, paddingBottom: 36, gap: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.5, elevation: 20,
-  },
-  statsRow: { flexDirection: 'row', gap: 10 },
-  statCard: {
-    flex: 1, backgroundColor: '#1A1A1A', borderRadius: 14, padding: 14,
-    alignItems: 'center', gap: 4, borderWidth: 1, borderColor: '#222',
-  },
-  statValue: { color: '#FFF', fontSize: 16, fontWeight: '700', marginTop: 4 },
-  statLabel: { color: '#555', fontSize: 10, textAlign: 'center' },
-  onlineMessage: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#FF6B3510', borderRadius: 12, padding: 14,
-    borderWidth: 1, borderColor: '#FF6B3530',
-  },
-  onlinePulse: {
-    width: 20, height: 20, borderRadius: 10,
-    backgroundColor: '#FF6B3530', justifyContent: 'center', alignItems: 'center',
-  },
-  onlinePulseDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF6B35' },
-  onlineText: { color: '#FF6B35', fontSize: 14, fontWeight: '500' },
-  offlineMessage: { backgroundColor: '#1A1A1A', borderRadius: 12, padding: 14, alignItems: 'center' },
-  offlineText: { color: '#666', fontSize: 14, textAlign: 'center' },
-  actions: { flexDirection: 'row', justifyContent: 'space-between' },
-  actionBtn: { alignItems: 'center', gap: 6, flex: 1 },
-  actionText: { color: '#888', fontSize: 11 },
-  metricsRow: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#1A1A1A', borderRadius: 12, padding: 14,
-  },
-  metricItem: { flex: 1, alignItems: 'center', gap: 4 },
-  metricValue: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  metricLabel: { color: '#555', fontSize: 11 },
-  metricDivider: { width: 1, height: 30, backgroundColor: '#2A2A2A' },
-});

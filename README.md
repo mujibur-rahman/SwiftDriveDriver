@@ -106,4 +106,48 @@ src/
 5. পুরোনো Redux slice-এর attendance reducer বদলিও না, 
    শুধু এই একটা screen-এর data fetching layer বদলাও
 
-কাজ শেষে diff দেখাও, আমি review করবো। -->
+কাজ শেষে diff দেখাও, আমি review করবো। 
+
+@screens/main/DriverHomeScreen.js and @store/slices/driverSlice.js see.
+-->
+
+<!-- যা মনে রাখবেন
+একবারে একটা screen দিন, পুরো app একসাথে না — review করা সহজ হবে, ভুল হলে ধরা সহজ হবে
+Reference file দেখান — "@components/ui/Card.tsx-এর মতো pattern করো" বললে agent আপনার existing convention follow করবে, নিজের মতো নতুন pattern বানাবে না
+Migration-এর মতো কাজে Planning mode default রাখুন
+প্রতিটা task শেষে diff manually check করুন, বিশেষ করে Redux store structure বা navigation-related file -->
+
+<!-- Look at @screens/main/DriverHomeScreen.js and @store/slices/driverSlice.js.
+
+Currently, DriverHomeScreen fetches driver data using Axios and manages 
+that data via a Redux Toolkit slice (driverSlice.js).
+
+I want to migrate this to RTK Query. Please do the following:
+
+1. Create a new RTK Query API slice at driver/driverApi.js, using 
+   injectEndpoints from @features/api/apiSlice.js. Convert every Axios 
+   call currently used for DriverHomeScreen into RTK Query endpoints 
+   (queries for GET requests, mutations for POST/PUT/DELETE). 
+   Keep the exact same request logic, parameters, and response handling 
+   — do not change any business logic, only the data-fetching layer.
+
+2. Update driver/driverSlice.js to keep ONLY local/UI state that isn't 
+   server data (if any exists — e.g. filters, modal visibility, selected 
+   tab). Remove any reducers/state that duplicate what RTK Query now 
+   manages (like driver list, loading, error). If driverSlice.js ends up 
+   with no local state left, tell me instead of deleting it — I'll decide.
+
+3. In DriverHomeScreen.js, replace the old useEffect + Axios + useSelector 
+   pattern with the appropriate RTK Query hooks (e.g. useGetDriverDataQuery). 
+   Keep the same loading and error UI behavior as before.
+
+4. Convert DriverHomeScreen.js's styling from StyleSheet to NativeWind, 
+   following the same className pattern used in @components/ui/Button.jsx. 
+   Do not change the layout, spacing, or component structure — only the 
+   styling approach.
+
+5. Do not touch navigation logic, other screens, or the global apiSlice.js 
+   base configuration.
+
+Show me the diff for every changed file when you're done. Don't apply 
+further changes until I review and approve. -->
