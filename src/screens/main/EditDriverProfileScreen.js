@@ -125,11 +125,10 @@ export default function EditDriverProfileScreen({ navigation }) {
 
           <Pressable
             onPress={toggleTheme}
-            className="p-4 bg-card border border-border rounded-xl"
+            className="self-end mb-4 px-3 py-2 rounded-xl bg-card border border-border"
           >
-            <Text className="text-foreground">
-              Current: {preference} ({isDark ? "dark" : "light"}) — Tap to
-              toggle
+            <Text className="text-sm font-inter-medium text-foreground">
+              {isDark ? "🌙 Dark" : "☀️ Light"} · {preference}
             </Text>
           </Pressable>
 
