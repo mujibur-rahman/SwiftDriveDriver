@@ -123,14 +123,14 @@ export default function EditDriverProfileScreen({ navigation }) {
         >
           <ScreenHeader title="Edit Profile" className="mb-4" />
 
-          <Pressable
+          {/* <Pressable
             onPress={toggleTheme}
             className="self-end mb-4 px-3 py-2 rounded-xl bg-card border border-border"
           >
             <Text className="text-sm font-inter-medium text-foreground">
               {isDark ? "🌙 Dark" : "☀️ Light"} · {preference}
             </Text>
-          </Pressable>
+          </Pressable> */}
 
           <AvatarPicker
             // name={name || user?.name}

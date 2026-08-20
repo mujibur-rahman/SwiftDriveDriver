@@ -6,20 +6,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Pressable,
 } from "react-native";
 import Heading from "@/components/ui/Heading";
 import Badge from "@/components/ui/Badge";
 import AuthHeader from "@/components/ui/AuthHeader";
 import AppTextInput from "@/components/ui/AppTextInput";
 import Button from "@/components/ui/Button";
-import { useTheme } from "@/theme";
 import { useLoginDriverMutation } from "@/features/auth/authApi";
 
 export default function DriverLoginScreen({ navigation }) {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const { isDark, preference, toggleTheme } = useTheme();
 
   const [loginDriver, { isLoading, error, isSuccess }] =
     useLoginDriverMutation();
@@ -43,7 +40,7 @@ export default function DriverLoginScreen({ navigation }) {
       return;
     }
     try {
-      console.log('handleLogin ', {phone, password});
+      console.log('handleLogin ', { phone, password });
       await loginDriver({ phone: phone.trim(), password }).unwrap();
       // success → authSlice update → RootNavigator switch
     } catch (_) {
@@ -63,16 +60,6 @@ export default function DriverLoginScreen({ navigation }) {
           showsVerticalScrollIndicator={false}
         >
           <AuthHeader showBack={false} />
-
-          {/* TEMP theme test — পরে সরান */}
-          <Pressable
-            onPress={toggleTheme}
-            className="self-end mb-4 px-3 py-2 rounded-xl bg-card border border-border"
-          >
-            <Text className="text-sm font-inter-medium text-foreground">
-              {isDark ? "🌙 Dark" : "☀️ Light"} · {preference}
-            </Text>
-          </Pressable>
 
           <View className="mb-10 mt-8">
             <Badge
