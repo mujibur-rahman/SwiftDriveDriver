@@ -1,6 +1,35 @@
+// src/components/ui/AppTextInput.jsx
 import React, { forwardRef, useState } from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import SvgIcon from "@/components/ui/SvgIcon";
+import { useTheme } from "@/theme";
+
+/**
+ * Reusable AppTextInput component
+ *
+ * Props:
+ * - label?: string
+ * - required?: boolean
+ * - rightLabel?: string
+ * - onRightLabelPress?: () => void
+ * - error?: string
+ * - helperText?: string
+ * - leftIcon?: string | React.ReactNode
+ * - leftContent?: string | number | React.ReactNode
+ * - rightIcon?: string | React.ReactNode
+ * - rightContent?: string | number | React.ReactNode
+ * - onRightPress?: () => void
+ * - secureTextEntry?: boolean
+ * - disabled?: boolean
+ * - containerClassName?: string
+ * - inputClassName?: string
+ * - size?: "sm" | "md" | "lg"
+ * - iconSize?: number
+ * - iconColor?: string
+ * - placeholderTextColor?: string
+ * - selectionColor?: string
+ * - cursorColor?: string
+ */
 
 const AppTextInput = forwardRef(
   (
@@ -32,13 +61,29 @@ const AppTextInput = forwardRef(
       containerClassName = "",
       inputClassName = "",
       size = "md", // sm | md | lg
+      iconSize = 20,
+      iconColor,
+      placeholderTextColor,
+      selectionColor,
+      cursorColor,
 
       ...props
     },
     ref,
   ) => {
+    const { colors, isDark } = useTheme();
     const [focused, setFocused] = useState(false);
     const [isSecure, setIsSecure] = useState(secureTextEntry);
+
+    // Theme-derived colors
+    const primaryColor = colors?.primary ?? (isDark ? "#38BDF8" : "#0EA5E9");
+    const mutedColor =
+      colors?.foregroundMuted ?? (isDark ? "#7DD3FC" : "#64748B");
+    const resolvedPlaceholder = placeholderTextColor ?? mutedColor;
+    const resolvedSelection = selectionColor ?? primaryColor;
+    const resolvedCursor = cursorColor ?? primaryColor;
+    const resolvedIconColor =
+      iconColor ?? (focused && !disabled ? primaryColor : mutedColor);
 
     // Auto eye icon when secureTextEntry is used
     const showEyeToggle = secureTextEntry;
@@ -59,7 +104,7 @@ const AppTextInput = forwardRef(
     // Size variants
     const sizeStyles = {
       sm: "h-11 rounded-xl px-3",
-      md: "h-[54px] rounded-2xl px-3.5",
+      md: "h-13.5 rounded-2xl px-3.5",
       lg: "h-16 rounded-2xl px-4",
     };
 
@@ -74,7 +119,7 @@ const AppTextInput = forwardRef(
             {label ? (
               <Text className="text-sm font-inter-semibold tracking-wide text-foreground-secondary">
                 {label}
-                {required && <Text className="text-foreground-secondary"> *</Text>}
+                {required && <Text className="font-inter-bold text-error"> *</Text>}
               </Text>
             ) : (
               <View />
@@ -85,6 +130,8 @@ const AppTextInput = forwardRef(
                 onPress={onRightLabelPress}
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel={rightLabel}
               >
                 <Text className="text-sm font-inter-medium text-primary">
                   {rightLabel}
@@ -109,7 +156,7 @@ const AppTextInput = forwardRef(
           {leftContent != null ? (
             <View className="mr-2.5 items-center justify-center">
               {typeof leftContent === "string" ||
-              typeof leftContent === "number" ? (
+                typeof leftContent === "number" ? (
                 <Text className="text-base font-inter-semibold text-foreground">
                   {leftContent}
                 </Text>
@@ -119,11 +166,15 @@ const AppTextInput = forwardRef(
             </View>
           ) : leftIcon ? (
             <View className="mr-2.5 items-center justify-center">
-              <SvgIcon
-                name={leftIcon}
-                size={20}
-                color={isFocused ? "#38BDF8" : "#7DD3FC"}
-              />
+              {typeof leftIcon === "string" ? (
+                <SvgIcon
+                  name={leftIcon}
+                  size={iconSize}
+                  color={resolvedIconColor}
+                />
+              ) : (
+                leftIcon
+              )}
             </View>
           ) : null}
 
@@ -135,11 +186,12 @@ const AppTextInput = forwardRef(
               text-base font-inter text-foreground
               ${inputClassName}
             `}
-            placeholderTextColor="#7DD3FC"
-            selectionColor="#38BDF8"
-            cursorColor="#38BDF8"
+            placeholderTextColor={resolvedPlaceholder}
+            selectionColor={resolvedSelection}
+            cursorColor={resolvedCursor}
             secureTextEntry={isSecure}
             editable={!disabled}
+            accessibilityLabel={props.accessibilityLabel ?? (typeof label === "string" ? label : undefined)}
             onFocus={(e) => {
               setFocused(true);
               props.onFocus?.(e);
@@ -155,7 +207,7 @@ const AppTextInput = forwardRef(
           {rightContent != null ? (
             <View className="ml-2.5 items-center justify-center">
               {typeof rightContent === "string" ||
-              typeof rightContent === "number" ? (
+                typeof rightContent === "number" ? (
                 <Text className="text-base font-inter-semibold text-foreground">
                   {rightContent}
                 </Text>
@@ -170,19 +222,27 @@ const AppTextInput = forwardRef(
               activeOpacity={0.7}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               disabled={disabled}
+              accessibilityRole="button"
+              accessibilityLabel={showEyeToggle ? (isSecure ? "Show password" : "Hide password") : undefined}
             >
-              <SvgIcon
-                name={finalRightIcon}
-                size={20}
-                color={isFocused ? "#38BDF8" : "#7DD3FC"}
-              />
+              {typeof finalRightIcon === "string" ? (
+                <SvgIcon
+                  name={finalRightIcon}
+                  size={iconSize}
+                  color={resolvedIconColor}
+                />
+              ) : (
+                finalRightIcon
+              )}
             </TouchableOpacity>
           ) : null}
         </View>
 
         {/* Error or Helper text */}
         {hasError ? (
-          <Text className="mt-1.5 text-xs font-inter text-error">{error}</Text>
+          <Text className="mt-1.5 text-xs font-inter text-error" accessibilityRole="alert">
+            {error}
+          </Text>
         ) : helperText ? (
           <Text className="mt-1.5 text-xs font-inter text-foreground-muted">
             {helperText}
@@ -196,3 +256,4 @@ const AppTextInput = forwardRef(
 AppTextInput.displayName = "AppTextInput";
 
 export default React.memo(AppTextInput);
+

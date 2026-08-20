@@ -5,14 +5,12 @@ import {
   Text,
   TouchableOpacity,
   Animated,
-  Switch,
   Platform,
   Linking,
   Alert,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { useDispatch, useSelector } from "react-redux";
 import { setOnlineStatus } from "@/store/slices/driverSlice";
@@ -24,8 +22,11 @@ import {
 import { downloadModels } from "@/services/fl/ModelManager";
 import { runInference } from "@/services/fl/FLInference";
 import { useTheme } from "@/theme";
+import AppSwitch from "@/components/ui/AppSwitch";
 import QuickActionsRow from "@/components/ui/QuickActionsRow";
 import StatRow from "@/components/ui/StatRow";
+import StatCardsRow from "@/components/ui/StatCardsRow";
+import Button from "@/components/ui/Button";
 
 export default function DriverHomeScreen({ navigation }) {
   const dispatch = useDispatch();
@@ -40,7 +41,6 @@ export default function DriverHomeScreen({ navigation }) {
   const locationSub = useRef(null);
 
   const primary = colors?.primary ?? "#38BDF8";
-  const mutedHex = isDark ? "#7DD3FC" : "#64748B";
 
   const { data: earningsData } = useGetTodayEarningsQuery("today", {
     skip: !isAuthenticated,
@@ -239,20 +239,12 @@ export default function DriverHomeScreen({ navigation }) {
             </View>
           </View>
 
-          <View className="flex-row items-center gap-2">
-            <Text className="text-[13px] font-inter text-foreground-muted">
-              {isOnline ? "Go Offline" : "Go Online"}
-            </Text>
-            <Switch
-              value={isOnline}
-              onValueChange={toggleOnline}
-              trackColor={{
-                false: isDark ? "#1E3A5F" : "#BAE6FD",
-                true: `${primary}80`,
-              }}
-              thumbColor={isOnline ? primary : mutedHex}
-            />
-          </View>
+          <AppSwitch
+            value={isOnline}
+            onValueChange={toggleOnline}
+            activeLabel="Go Offline"
+            inactiveLabel="Go Online"
+          />
         </View>
       </LinearGradient>
 
@@ -260,13 +252,13 @@ export default function DriverHomeScreen({ navigation }) {
         className="absolute bottom-0 left-0 right-0 gap-4 rounded-t-3xl border-t border-border bg-card px-5 pb-28 pt-5"
         style={{
           transform: [{ translateY: slideAnim }],
-          shadowColor: "#000",
+          shadowColor: colors?.foreground ?? "#000",
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: isDark ? 0.5 : 0.15,
           elevation: 20,
         }}
       >
-        <View className="flex-row gap-2.5">
+        {/* <View className="flex-row gap-2.5">
           {[
             { label: "Trips Today", value: todayStats.trips, icon: "car" },
             {
@@ -293,23 +285,39 @@ export default function DriverHomeScreen({ navigation }) {
               </Text>
             </View>
           ))}
-        </View>
+        </View> */}
 
-        <TouchableOpacity
+        <StatCardsRow
+          items={[
+            { label: "Trips Today", value: todayStats.trips, icon: "car" },
+            {
+              label: "Today's Earnings",
+              value: `$${Number(todayStats.earnings).toFixed(2)}`,
+              icon: "cash",
+            },
+            {
+              label: "Hours Online",
+              value: `${Number(todayStats.hours).toFixed(1)}h`,
+              icon: "clock-outline",
+            },
+          ]}
+        />
+
+        <Button
+          variant="muted"
+          size="sm"
           onPress={testModelDownload}
-          className="items-center rounded-xl bg-background-muted p-2.5"
         >
-          <Text className="font-inter-medium text-foreground">
-            Test FL Download
-          </Text>
-        </TouchableOpacity>
+          Test FL Download
+        </Button>
 
-        <TouchableOpacity
+        <Button
+          variant="info"
+          size="sm"
           onPress={testInference}
-          className="items-center rounded-xl bg-info p-2.5"
         >
-          <Text className="font-inter-medium text-white">Test Inference</Text>
-        </TouchableOpacity>
+          Test Inference
+        </Button>
 
         {isOnline ? (
           <View className="flex-row items-center gap-3 rounded-xl border border-primary/30 bg-primary/10 p-3.5">

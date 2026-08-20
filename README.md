@@ -151,3 +151,45 @@ I want to migrate this to RTK Query. Please do the following:
 
 Show me the diff for every changed file when you're done. Don't apply 
 further changes until I review and approve. -->
+
+<!-- Look at @components/ui/ActionGrid.jsx.
+
+I found a few issues after reviewing this component — please fix them 
+without changing the existing public API (props) or breaking any current 
+usage (e.g. in DriverHomeScreen.js):
+
+1. Division-by-zero bug: if `columns` is explicitly passed as `0`, 
+   `cols = columns ?? items.length` evaluates to `0` (since `??` doesn't 
+   treat `0` as nullish), causing `100 / cols` to become `Infinity` and 
+   break the layout width. Fix the logic so `columns={0}` (or any falsy-but-
+   defined value) safely falls back to `items.length`, e.g. using 
+   `columns || items.length` instead of `??`, but keep supporting 
+   `columns={undefined}` as "use items.length" too.
+
+2. Badge positioning (`absolute -right-3 -top-2`) is a fixed offset 
+   regardless of badge `size`. Adjust the offset conditionally based on 
+   `badgeProps.size` (`"sm"` vs `"md"`) so larger badges don't overlap 
+   the icon awkwardly.
+
+3. Add accessibility props to the TouchableOpacity: 
+   `accessibilityRole="button"` and `accessibilityLabel={label}` 
+   (fall back to a generic label if `label` is missing).
+
+Don't change anything else in the file — no refactors, no renaming, no 
+styling changes beyond what's needed for these three fixes.
+
+Show me the diff when done. -->
+
+
+<!-- Look at @screens/main/DriverHomeScreens.js and @components/ui/AppModal.jsx
+I've identified this section in DriverHomeScreen.js I want converted into AppModal component inside @components/ui: 
+
+Please do the following:
+1. Follow the same file structure, export style (default vs named), and className conventions as @components/ui/Button.jsx
+2. Do not change any other part of the screen, and do not touch 
+   navigation, RTK Query hooks, or any logic outside these section.
+Show me the diff
+
+<View className="flex-row gap-2.5">
+   ...
+</View> -->

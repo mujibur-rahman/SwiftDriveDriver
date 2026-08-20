@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@/theme";
 import Button from "@/components/ui/Button";
 
 /**
@@ -20,8 +21,9 @@ import Button from "@/components/ui/Button";
  * Props:
  * - visible: boolean
  * - onClose: () => void
- * - title?: string | ReactNode
- * - children: ReactNode
+ * - title?: string | React.ReactNode
+ * - subtitle?: string | React.ReactNode
+ * - children: React.ReactNode
  * - showHandle?: boolean          (default true)
  * - showClose?: boolean           (default false)
  * - closeOnOverlay?: boolean      (default true)
@@ -29,17 +31,23 @@ import Button from "@/components/ui/Button";
  * - onPrimary?: () => void
  * - primaryLoading?: boolean
  * - primaryDisabled?: boolean
+ * - primaryVariant?: string       (default "primary")
  * - secondaryLabel?: string       (default "Cancel")
  * - onSecondary?: () => void
+ * - secondaryLoading?: boolean
+ * - secondaryDisabled?: boolean
+ * - secondaryVariant?: string     (default "outline")
  * - hideActions?: boolean
  * - scrollable?: boolean          (default true)
  * - className?: string            // sheet container
  * - contentClassName?: string
+ * - footerClassName?: string
  */
 export default function AppModal({
   visible,
   onClose,
   title,
+  subtitle,
   children,
   showHandle = true,
   showClose = false,
@@ -48,14 +56,23 @@ export default function AppModal({
   onPrimary,
   primaryLoading = false,
   primaryDisabled = false,
+  primaryVariant = "primary",
   secondaryLabel = "Cancel",
   onSecondary,
+  secondaryLoading = false,
+  secondaryDisabled = false,
+  secondaryVariant = "outline",
   hideActions = false,
   scrollable = true,
   className = "",
   contentClassName = "",
+  footerClassName = "",
 }) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
+
+  const closeIconColor =
+    colors?.foregroundMuted ?? (isDark ? "#7DD3FC" : "#64748B");
 
   const handleSecondary = () => {
     if (onSecondary) onSecondary();
@@ -90,9 +107,11 @@ export default function AppModal({
         <Pressable
           className="flex-1 justify-end bg-black/80"
           onPress={closeOnOverlay ? onClose : undefined}
+          accessibilityRole="none"
         >
           {/* Sheet — stop propagation so taps inside don't close */}
           <Pressable
+            accessibilityViewIsModal
             className={`rounded-t-3xl border border-border bg-card px-6 pt-3 ${className}`}
             style={{ paddingBottom: Math.max(insets.bottom, 24) }}
             onPress={(e) => e.stopPropagation()}
@@ -104,16 +123,30 @@ export default function AppModal({
               </View>
             )}
 
-            {/* Title row */}
-            {(title || showClose) && (
-              <View className="mb-5 flex-row items-center justify-between">
-                {typeof title === "string" ? (
-                  <Text className="flex-1 text-xl font-inter-bold text-foreground">
-                    {title}
-                  </Text>
-                ) : (
-                  title
-                )}
+            {/* Title & Header row */}
+            {(title || subtitle || showClose) && (
+              <View className="mb-5 flex-row items-start justify-between">
+                <View className="flex-1">
+                  {title ? (
+                    typeof title === "string" ? (
+                      <Text className="text-xl font-inter-bold text-foreground">
+                        {title}
+                      </Text>
+                    ) : (
+                      title
+                    )
+                  ) : null}
+
+                  {subtitle ? (
+                    typeof subtitle === "string" ? (
+                      <Text className="mt-1 text-sm font-inter text-foreground-muted">
+                        {subtitle}
+                      </Text>
+                    ) : (
+                      subtitle
+                    )
+                  ) : null}
+                </View>
 
                 {showClose && (
                   <TouchableOpacity
@@ -121,8 +154,10 @@ export default function AppModal({
                     onPress={onClose}
                     activeOpacity={0.7}
                     hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close modal"
                   >
-                    <Icon name="close" size={20} color="#7DD3FC" />
+                    <Icon name="close" size={20} color={closeIconColor} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -132,19 +167,24 @@ export default function AppModal({
 
             {/* Actions */}
             {!hideActions && (primaryLabel || secondaryLabel) && (
-              <View className="mt-5 flex-row gap-3">
+              <View className={`mt-5 flex-row gap-3 ${footerClassName}`}>
                 {secondaryLabel ? (
                   <View className={primaryLabel ? "flex-1" : "flex-1"}>
-                    <Button variant="outline" onPress={handleSecondary}>
+                    <Button
+                      variant={secondaryVariant}
+                      onPress={handleSecondary}
+                      loading={secondaryLoading}
+                      disabled={secondaryDisabled || secondaryLoading}
+                    >
                       {secondaryLabel}
                     </Button>
                   </View>
                 ) : null}
 
                 {primaryLabel ? (
-                  <View className="flex-2">
+                  <View className={secondaryLabel ? "flex-1" : "flex-1"}>
                     <Button
-                      variant="primary"
+                      variant={primaryVariant}
                       onPress={onPrimary}
                       loading={primaryLoading}
                       disabled={primaryDisabled || primaryLoading}
@@ -162,12 +202,15 @@ export default function AppModal({
   );
 }
 
-// {/* Confirm only */}
+// Usage examples:
+//
+// Confirm only:
 // <AppModal
 //   visible={open}
 //   onClose={() => setOpen(false)}
 //   title="Sign out?"
 //   primaryLabel="Sign Out"
+//   primaryVariant="error"
 //   onPrimary={handleLogout}
 //   secondaryLabel="Cancel"
 // >
@@ -175,8 +218,8 @@ export default function AppModal({
 //     Are you sure you want to sign out?
 //   </Text>
 // </AppModal>
-
-// {/* Custom content, no footer buttons */}
+//
+// Custom content with close button, no footer actions:
 // <AppModal
 //   visible={open}
 //   onClose={() => setOpen(false)}
@@ -186,8 +229,8 @@ export default function AppModal({
 // >
 //   {/* filter UI */}
 // </AppModal>
-
-// {/* Primary only */}
+//
+// Primary only:
 // <AppModal
 //   visible={open}
 //   onClose={() => setOpen(false)}
@@ -198,3 +241,4 @@ export default function AppModal({
 // >
 //   <Text className="text-foreground">Profile updated.</Text>
 // </AppModal>
+
