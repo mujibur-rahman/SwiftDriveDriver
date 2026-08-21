@@ -4,25 +4,8 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "@/theme";
 
-/**
- * Props:
- * - title?: string | ReactNode
- * - showBack?: boolean
- * - onBack?: () => void
- * - backIcon?: string
- * - rightIcon?: string
- * - onRightPress?: () => void
- * - rightContent?: ReactNode
- * - leftContent?: ReactNode
- * - rightVariant?: "button" | "plain"
- * - iconSize?: number              ← applies to both (default 22)
- * - backIconSize?: number         ← overrides iconSize for back
- * - rightIconSize?: number        ← overrides iconSize for right
- * - transparent?: boolean
- * - className?: string
- * - titleClassName?: string
- */
 export default function ScreenHeader({
   title,
   showBack = true,
@@ -42,6 +25,10 @@ export default function ScreenHeader({
 }) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const { colors, isDark } = useTheme();
+
+  const primary = colors?.primary ?? "#38BDF8";
+  const muted = isDark ? "#7DD3FC" : "#64748B";
 
   const backSize = backIconSize ?? iconSize;
   const rightSize = rightIconSize ?? iconSize;
@@ -59,7 +46,7 @@ export default function ScreenHeader({
         onPress={handleBack}
         activeOpacity={0.7}
       >
-        <Icon name={backIcon} size={backSize} color="#38BDF8" />
+        <Icon name={backIcon} size={backSize} color={primary} />
       </TouchableOpacity>
     ) : (
       <View className="h-10 w-10" />
@@ -73,7 +60,7 @@ export default function ScreenHeader({
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         disabled={!onRightPress}
       >
-        <Icon name={rightIcon} size={rightSize} color="#7DD3FC" />
+        <Icon name={rightIcon} size={rightSize} color={muted} />
       </TouchableOpacity>
     ) : (
       <TouchableOpacity
@@ -82,7 +69,7 @@ export default function ScreenHeader({
         activeOpacity={0.7}
         disabled={!onRightPress}
       >
-        <Icon name={rightIcon} size={rightSize} color="#38BDF8" />
+        <Icon name={rightIcon} size={rightSize} color={primary} />
       </TouchableOpacity>
     )
   ) : null;
@@ -90,11 +77,7 @@ export default function ScreenHeader({
   const right =
     rightContent ??
     rightIconNode ??
-    (showBack ? (
-      <View className="h-10 w-10" />
-    ) : (
-      <View className="h-10 w-10" />
-    ));
+    (showBack ? <View className="h-10 w-10" /> : <View className="h-10 w-10" />);
 
   const isRootStyle = !showBack && !leftContent;
 
