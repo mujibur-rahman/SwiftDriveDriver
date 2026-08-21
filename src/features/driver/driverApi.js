@@ -7,6 +7,7 @@ import {
   setOnlineStatus,
   updateTodayStats,
 } from "@/features/driver/driverSlice";
+import { updateDriverProfile } from "@/features/auth/authSlice";
 
 export const driverApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
@@ -52,6 +53,30 @@ export const driverApi = apiSlice.injectEndpoints({
         body,
       }),
       invalidatesTags: ["Driver"],
+    }),
+
+    updateVehicle: builder.mutation({
+      query: (body) => ({
+        url: "/drivers/vehicle",
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["Driver"],
+      async onQueryStarted(_body, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          // ASSUMPTION: backend returns either { vehicle: {...} } or the
+          // updated vehicle fields directly at the top level. Adjust the
+          // `data?.vehicle ?? data` fallback below if your API's actual
+          // response shape differs.
+          const updatedVehicle = data?.vehicle ?? data;
+          if (updatedVehicle && typeof updatedVehicle === "object") {
+            dispatch(updateDriverProfile({ vehicle: updatedVehicle }));
+          }
+        } catch {
+          // component handles the error via .unwrap()
+        }
+      },
     }),
 
     acceptRide: builder.mutation({
@@ -168,6 +193,7 @@ export const {
   useLazyGetActiveRideQuery,
   useUpdateDriverStatusMutation,
   useUpdateDriverPreferenceMutation,
+  useUpdateVehicleMutation,
   useAcceptRideMutation,
   useRejectRideMutation,
   useStartRideMutation,
