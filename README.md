@@ -193,3 +193,14 @@ Show me the diff
 <View className="flex-row gap-2.5">
    ...
 </View> -->
+
+
+<!-- // @screens/main/ActiveRideScreen.js look here
+// I want you to follow the same pattern as @services/attendanceApi.js
+// and @services/driverApi.js to convert this screen to RTK Query. 
+
+// 1. Create a new RTK Query API slice at /features/driver/driverApi.js
+// 2. Follow the same file structure, export style (default vs named), and className conventions as @components/ui/Button.jsx
+// 3. Do not change any other part of the screen, and do not touch
+//    navigation, RTK Query hooks, or any logic outside these section.
+// Show me the diff -->

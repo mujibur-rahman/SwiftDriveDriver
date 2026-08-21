@@ -13,7 +13,7 @@ import MapView, { Marker } from "react-native-maps";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useDispatch, useSelector } from "react-redux";
-import { setOnlineStatus } from "@/store/slices/driverSlice";
+import { setOnlineStatus } from "@/features/driver/driverSlice";
 import { useDriverSocket } from "@/services/DriverSocketContext";
 import {
   useGetTodayEarningsQuery,

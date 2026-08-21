@@ -20,13 +20,14 @@ import { ActivityIndicator, View } from "react-native";
 
 import AuthNavigator from "@/navigation/AuthNavigator";
 import MainNavigator from "@/navigation/MainNavigator";
-import { recoverActiveRide } from "@/store/slices/driverSlice";
+import { useGetActiveRideQuery } from "@/features/driver/driverApi";
 import { useDriverSocket } from "@/services/DriverSocketContext";
 import {
   hydrateAuth,
   selectAuthHydrated,
   selectIsAuthenticated,
 } from "@/features/auth/authSlice";
+import { setActiveRide, setOnlineStatus, setPassenger, setRideStatus } from "@/features/driver/driverSlice";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -39,6 +40,13 @@ export default function RootNavigator() {
   const { rideStatus } = useSelector((s) => s.driver);
   const { connect } = useDriverSocket();
   const navigationRef = useRef(null);
+
+  // const { data: activeRideData, isLoading: isRecovering } =
+  //   useGetActiveRideQuery(undefined, { skip: !isAuthenticated });
+
+  const { data: activeRideData, isSuccess } = useGetActiveRideQuery(undefined, {
+    skip: !isAuthenticated,
+  });
 
   const [fontsLoaded, fontError] = useFonts({
     Inter_300Light,
@@ -63,17 +71,19 @@ export default function RootNavigator() {
     if (!isAuthenticated) return;
 
     connect();
-
-    dispatch(recoverActiveRide()).then((result) => {
-      if (result.payload?.ride) {
-        console.log(
-          "[Recovery] Active ride found:",
-          result.payload.ride.status,
-        );
-        navigationRef.current?.navigate("ActiveRide");
-      }
-    });
   }, [isAuthenticated, connect, dispatch]);
+
+  // 3. Navigate to ActiveRide when ride recovery completes
+  // onQueryStarted isn't needed — getActiveRide fulfilled should hydrate local UI once:
+  // Option A: small effect
+  useEffect(() => {
+    if (!isSuccess || !activeRideData?.ride) return;
+    dispatch(setActiveRide(activeRideData.ride));
+    dispatch(setPassenger(activeRideData.passenger));
+    dispatch(setRideStatus(activeRideData.ride.status));
+    dispatch(setOnlineStatus(true));
+    // navigate if needed
+  }, [isSuccess, activeRideData]);
 
   // 3. Hide splash when fonts ready
   useEffect(() => {

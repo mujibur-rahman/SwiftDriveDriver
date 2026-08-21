@@ -1,7 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { apiSlice } from "@/features/api/apiSlice";
 import authReducer from "@/features/auth/authSlice";
-import driverReducer from "./slices/driverSlice"; // আপাতত পুরনো
+import driverReducer from "@/features/driver/driverSlice";
 import earningsReducer from "./slices/earningsSlice";
 
 // inject endpoints register করতে side-effect import

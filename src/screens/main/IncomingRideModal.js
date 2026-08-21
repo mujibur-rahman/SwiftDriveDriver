@@ -3,14 +3,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Vibration } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
-import { useDispatch, useSelector } from 'react-redux';
-import { acceptRide, rejectRide } from '../../store/slices/driverSlice';
+import { useSelector } from 'react-redux';
+import { useAcceptRideMutation, useRejectRideMutation } from '@/features/driver/driverApi';
 
 const COUNTDOWN_SECONDS = 20;
 
 export default function IncomingRideModal({ navigation }) {
-  const dispatch = useDispatch();
   const { incomingRide } = useSelector((s) => s.driver);
+  const [acceptRide, { isLoading: accepting }] = useAcceptRideMutation();
+  const [rejectRide, { isLoading: rejecting }] = useRejectRideMutation();
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
   const progressAnim = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(0.85)).current;
@@ -18,9 +19,8 @@ export default function IncomingRideModal({ navigation }) {
   const timerRef = useRef(null);
 
   // Get id safely — check multiple field names
-  const rideId = incomingRide?.id 
-            || incomingRide?.rideId 
-            || incomingRide?.orderId; 
+  const rideId =
+    incomingRide?.id || incomingRide?.rideId || incomingRide?.orderId;
 
   useEffect(() => {
     Animated.parallel([
@@ -38,25 +38,35 @@ export default function IncomingRideModal({ navigation }) {
   }, []);
 
   const handleTimeout = async () => {
-    console.log('[Timeout] ride id:', incomingRide?.id); 
-    await dispatch(rejectRide(incomingRide?.id));  // ← await
+    console.log('[Timeout] ride id:', incomingRide?.id);
+    try {
+      await rejectRide(incomingRide?.id);
+    } catch {
+      // ignore — ride may already be expired
+    }
     navigation.goBack();
   };
 
   const handleAccept = async () => {
-    console.log('[Modal] Accepting ride id:', rideId);  
     clearInterval(timerRef.current);
     Vibration.cancel();
-    const result = await dispatch(acceptRide(rideId));
-    if (!result.error) navigation.replace('ActiveRide');
-    else navigation.goBack();
+    try {
+      await acceptRide(rideId).unwrap(); // throws on error
+      navigation.replace("ActiveRide");
+    } catch (err) {
+      console.warn("Accept failed", err);
+      navigation.goBack();
+    }
   };
 
-  const handleReject = async () => {  
-    console.log('[Modal] Rejecting ride id:', rideId);
+  const handleReject = async () => {
     clearInterval(timerRef.current);
     Vibration.cancel();
-    await dispatch(rejectRide(rideId));
+    try {
+      await rejectRide(rideId).unwrap();
+    } catch {
+      // expired / network
+    }
     navigation.goBack();
   };
 

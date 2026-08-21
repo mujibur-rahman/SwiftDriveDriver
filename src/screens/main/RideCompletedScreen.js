@@ -12,7 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { clearActiveRide } from '../../store/slices/driverSlice';
+import { clearActiveRide } from '@/features/driver/driverSlice';
 import { saveTripLocally } from '../../services/database/tripStore';
 
 export default function RideCompletedScreen({ navigation }) {

@@ -5,20 +5,21 @@ import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { startRide, completeRide, resetActiveRide } from '../../store/slices/driverSlice';
+import { useStartRideMutation, useCompleteRideMutation } from '@/features/driver/driverApi';
 import { useDriverSocket } from '../../services/DriverSocketContext';
 import { DARK_MAP_STYLE } from '../../utils/mapStyles';
 
 const STEP_CONFIG = {
   accepted: { title: 'Head to Pickup', subtitle: 'Navigate to passenger location', primaryBtn: "I've Arrived", primaryAction: 'arrived', color: '#FF6B35' },
-  arrived:  { title: 'Passenger Pickup', subtitle: 'Waiting for passenger to board', primaryBtn: 'Start Ride', primaryAction: 'start', color: '#4A9EFF' },
-  ongoing:  { title: 'Trip in Progress', subtitle: 'Navigate to destination', primaryBtn: 'Complete Ride', primaryAction: 'complete', color: '#00D95F' },
+  arrived: { title: 'Passenger Pickup', subtitle: 'Waiting for passenger to board', primaryBtn: 'Start Ride', primaryAction: 'start', color: '#4A9EFF' },
+  ongoing: { title: 'Trip in Progress', subtitle: 'Navigate to destination', primaryBtn: 'Complete Ride', primaryAction: 'complete', color: '#00D95F' },
 };
 
 export default function ActiveRideScreen({ navigation }) {
-  const dispatch = useDispatch();
   const { rideStatus, activeRide, passenger, currentLocation } = useSelector((s) => s.driver);
   const { arrivedAtPickup } = useDriverSocket();
+  const [startRide] = useStartRideMutation();
+  const [completeRide] = useCompleteRideMutation();
   const mapRef = useRef(null);
   const slideAnim = useRef(new Animated.Value(300)).current;
 
@@ -30,13 +31,13 @@ export default function ActiveRideScreen({ navigation }) {
     if (rideStatus === 'completed') setTimeout(() => navigation.replace('RideCompleted'), 500);
   }, [rideStatus]);
 
-  const handlePrimaryAction = (action) => {
-    if (action === 'arrived') arrivedAtPickup(activeRide?.id);
-    else if (action === 'start') dispatch(startRide(activeRide?.id));
+  const handlePrimaryAction = async (action) => {
+    if (action === 'arrived') await arrivedAtPickup(activeRide?.id).unwrap();
+    else if (action === 'start') await startRide(activeRide?.id).unwrap();
     else if (action === 'complete') {
       Alert.alert('Complete Ride', 'Confirm ride completion?', [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Complete', onPress: () => dispatch(completeRide(activeRide?.id)) },
+        { text: 'Complete', onPress: () => completeRide(activeRide?.id).unwrap() },
       ]);
     }
   };
