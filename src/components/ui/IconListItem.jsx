@@ -2,6 +2,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
+import { useTheme } from "@/theme";
 
 /**
  * List row with emoji/icon, title, subtitle, and action buttons
@@ -34,6 +35,11 @@ export default function IconListItem({
   className = "",
   disabled = false,
 }) {
+  const { colors, isDark } = useTheme();
+  const primary = colors?.primary ?? (isDark ? "#38BDF8" : "#0EA5E9");
+  const muted = isDark ? "#7DD3FC" : "#64748B";
+  const error = isDark ? "#F87171" : "#DC2626";
+
   const canEdit = showEdit ?? !!onEdit;
   const canDelete = showDelete ?? !!onDelete;
 
@@ -53,7 +59,7 @@ export default function IconListItem({
         {icon ? (
           <Text className="text-2xl">{icon}</Text>
         ) : leftIcon ? (
-          <Icon name={leftIcon} size={22} color="#38BDF8" />
+          <Icon name={leftIcon} size={22} color={primary} />
         ) : null}
       </View>
 
@@ -86,7 +92,7 @@ export default function IconListItem({
               activeOpacity={0.7}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             >
-              <Icon name="pencil-outline" size={16} color="#7DD3FC" />
+              <Icon name="pencil-outline" size={16} color={muted} />
             </TouchableOpacity>
           )}
 
@@ -100,7 +106,7 @@ export default function IconListItem({
               activeOpacity={0.7}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
             >
-              <Icon name="trash-can-outline" size={16} color="#F87171" />
+              <Icon name="trash-can-outline" size={16} color={error} />
             </TouchableOpacity>
           )}
         </View>
@@ -109,8 +115,10 @@ export default function IconListItem({
   );
 }
 
+// IconListItem usage examples:
+
 // {/* Icon instead of emoji */}
-// <PlaceRow
+// <IconListItem
 //   leftIcon="map-marker"
 //   label="Office"
 //   subtitle="123 Main St"
@@ -119,7 +127,7 @@ export default function IconListItem({
 // />
 
 // {/* No delete */}
-// <PlaceRow
+// <IconListItem
 //   icon="🏠"
 //   label="Home"
 //   subtitle={address}
@@ -128,7 +136,36 @@ export default function IconListItem({
 // />
 
 // {/* Read-only row */}
-// <PlaceRow
+// <IconListItem
+//   icon="⭐"
+//   label="Favorite"
+//   subtitle="Saved place"
+//   showEdit={false}
+//   showDelete={false}
+// />
+
+
+
+// {/* Icon instead of emoji */}
+// <IconListItem
+//   leftIcon="map-marker"
+//   label="Office"
+//   subtitle="123 Main St"
+//   onPress={...}
+//   onEdit={...}
+// />
+
+// {/* No delete */}
+// <IconListItem
+//   icon="🏠"
+//   label="Home"
+//   subtitle={address}
+//   onPress={openEdit}
+//   onEdit={openEdit}
+// />
+
+// {/* Read-only row */}
+// <IconListItem
 //   icon="⭐"
 //   label="Favorite"
 //   subtitle="Saved place"

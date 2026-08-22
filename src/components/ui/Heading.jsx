@@ -16,6 +16,11 @@ import { View, Text } from "react-native";
  * - as?: "h1" | "h2" | "h3"   // semantic only; all render Text
  */
 const SIZES = {
+  xs: {
+    title: "text-lg font-inter-bold",
+    subtitle: "text-xs",
+    gap: "mt-1",
+  },
   sm: {
     title: "text-xl font-inter-bold",
     subtitle: "text-sm",
