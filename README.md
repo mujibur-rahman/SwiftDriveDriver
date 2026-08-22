@@ -204,3 +204,65 @@ Show me the diff
 // 3. Do not change any other part of the screen, and do not touch
 //    navigation, RTK Query hooks, or any logic outside these section.
 // Show me the diff -->
+
+
+<!-- Look at @screens/main/PayoutSettingsScreen.js and @components/ui/Button.jsx, 
+@components/ui/Badge.jsx (for how they handle theme-aware colors).
+
+I want to fully migrate this screen's styling to NativeWind and the shared 
+theme system (@theme/ThemeContext.jsx, @theme/colors.js) — following the 
+same className conventions used across the rest of the app (bg-background, 
+bg-card, border-border, text-foreground, text-foreground-muted, bg-primary, 
+text-primary, etc.), with proper light/dark theme support.
+
+Do this:
+
+1. Import and use `useTheme()` at the top of the component to get 
+   `{ colors, isDark }`.
+
+2. Replace the entire StyleSheet.create(...) block and all inline `style={}` 
+   props with NativeWind `className` strings, mapping the old hardcoded 
+   colors to the shared theme tokens:
+   - `#0A0A0A` (screen/header background) → `bg-background`
+   - `#111` (schedule item / bank card backgrounds) → `bg-card`
+   - `#1E1E1E`, `#2A2A2A` (borders) → `border-border`
+   - `#1A1A1A` (back button, icon circles) → `bg-background-muted`
+   - White text (`#FFF`) → `text-foreground`
+   - Muted grays (`#888`, `#666`, `#444`) → `text-foreground-muted`
+   - The orange accent (`#FF6B35` and its variants like `#FF6B3520`, 
+     `#FF6B3540`) → replace with the app's `primary` token 
+     (`bg-primary`, `text-primary`, `border-primary`, and 
+     `bg-primary/15`, `border-primary/25` for the tinted/opacity variants 
+     — check how @components/ui/Badge.jsx uses opacity-based variants like 
+     `bg-primary/15` for this exact pattern)
+
+3. For the two LinearGradient usages, since `className` can't set gradient 
+   colors:
+   - The outer header/container gradient uses the SAME color twice 
+     (`['#0A0A0A', '#0A0A0A']`) — it's not actually a gradient. Replace this 
+     outer LinearGradient wrapper with a plain themed `View` 
+     (`className="flex-1 bg-background"`).
+   - The balance card and the two "Save" button gradients ARE real 
+     two-color gradients. Keep them as LinearGradient components, but 
+     replace the hardcoded hex colors with theme-derived hex values from 
+     `colors.primary` (get a second, slightly darker/lighter stop the same 
+     way @components/ui/Button.jsx or @components/ui/Badge.jsx compute 
+     light/dark-aware hex fallbacks — e.g. `colors?.primary` for the first 
+     stop, and a reasonable darker shade for the second stop, consistent 
+     with how the rest of the app derives its primary-based hex values).
+
+4. Icon `color` props (which also can't use className) should use 
+   theme-derived hex the same way — `colors?.foreground` for white icons, 
+   a theme-derived muted hex for gray icons, and `colors?.primary` for 
+   orange-accent icons (replacing `#FF6B35`/`#888` accordingly).
+
+5. Do NOT change the layout structure, spacing, component nesting, or any 
+   business logic (handleSave, handleWithdraw, useState hooks, the 
+   simulated API call, Alert dialogs) — this is a pure styling/theme 
+   migration. Do not introduce RTK Query here; that's a separate future step.
+
+6. Do not touch navigation logic, other screens, or the global 
+   @features/api/apiSlice.js configuration.
+
+Show me the diff for every changed file when you're done. Don't apply 
+further changes until I review and approve. -->

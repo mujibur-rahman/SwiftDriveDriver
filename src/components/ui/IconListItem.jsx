@@ -5,28 +5,36 @@ import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { useTheme } from "@/theme";
 
 /**
- * List row with emoji/icon, title, subtitle, and action buttons
+ * List row with emoji/icon, title, subtitle, and optional right actions / content
  *
  * Props:
- * - icon?: string              // emoji or left content
- * - leftIcon?: string          // MaterialCommunityIcons name (if no emoji)
+ * - icon?: string                 // emoji
+ * - leftIcon?: string             // MaterialCommunityIcons name
+ * - leftIconSize?: number         // default 22
+ * - leftIconColor?: string        // override theme primary
+ * - iconBoxVariant?: "muted" | "primary"  // default "muted"; "primary" = bg-primary/15
  * - label: string
  * - subtitle?: string
- * - subtitlePlaceholder?: string
+ * - subtitlePlaceholder?: string  // shown only when subtitle is undefined
+ * - rightContent?: ReactNode      // e.g. <Badge />, status chip
  * - onPress?: () => void
  * - onEdit?: () => void
  * - onDelete?: () => void
- * - showEdit?: boolean         (default true if onEdit)
- * - showDelete?: boolean       (default true if onDelete)
+ * - showEdit?: boolean            // default true if onEdit
+ * - showDelete?: boolean          // default true if onDelete
  * - className?: string
  * - disabled?: boolean
  */
 export default function IconListItem({
   icon,
   leftIcon,
+  leftIconSize = 22,
+  leftIconColor,
+  iconBoxVariant = "muted",
   label,
   subtitle,
   subtitlePlaceholder = "Tap to set address",
+  rightContent,
   onPress,
   onEdit,
   onDelete,
@@ -42,45 +50,58 @@ export default function IconListItem({
 
   const canEdit = showEdit ?? !!onEdit;
   const canDelete = showDelete ?? !!onDelete;
+  const hasActions = canEdit || canDelete;
+  const resolvedIconColor = leftIconColor ?? primary;
 
-  return (
-    <TouchableOpacity
-      className={`
-        flex-row items-center gap-3.5 rounded-2xl border border-border bg-card p-4
-        ${disabled ? "opacity-50" : ""}
-        ${className}
-      `}
-      activeOpacity={0.7}
-      onPress={onPress}
-      disabled={disabled || !onPress}
-    >
+  const iconBoxClass =
+    iconBoxVariant === "primary"
+      ? "bg-primary/15"
+      : "bg-background-muted";
+
+  const body = (
+    <>
       {/* Left icon / emoji */}
-      <View className="h-12 w-12 items-center justify-center rounded-xl bg-background-muted">
-        {icon ? (
-          <Text className="text-2xl">{icon}</Text>
-        ) : leftIcon ? (
-          <Icon name={leftIcon} size={22} color={primary} />
-        ) : null}
-      </View>
+      {(icon || leftIcon) && (
+        <View
+          className={`h-11 w-11 items-center justify-center rounded-xl ${iconBoxClass}`}
+        >
+          {icon ? (
+            <Text className="text-2xl">{icon}</Text>
+          ) : (
+            <Icon
+              name={leftIcon}
+              size={leftIconSize}
+              color={resolvedIconColor}
+            />
+          )}
+        </View>
+      )}
 
       {/* Label + subtitle */}
-      <View className="flex-1">
+      <View className="min-w-0 flex-1">
         <Text
-          className="text-[15px] font-inter-medium text-foreground"
+          className="text-sm font-inter-medium text-foreground"
           numberOfLines={1}
         >
           {label}
         </Text>
-        <Text
-          className="mt-0.5 text-[13px] font-inter text-foreground-muted"
-          numberOfLines={1}
-        >
-          {subtitle || subtitlePlaceholder}
-        </Text>
+        {(subtitle != null && subtitle !== "") ||
+          (subtitle === undefined && subtitlePlaceholder) ? (
+          <Text
+            className="mt-0.5 text-xs font-inter text-foreground-muted"
+            numberOfLines={2}
+          >
+            {subtitle != null && subtitle !== ""
+              ? subtitle
+              : subtitlePlaceholder}
+          </Text>
+        ) : null}
       </View>
 
-      {/* Actions */}
-      {(canEdit || canDelete) && (
+      {/* Right: custom content and/or edit/delete */}
+      {rightContent ? rightContent : null}
+
+      {hasActions && (
         <View className="flex-row items-center gap-1.5">
           {canEdit && (
             <TouchableOpacity
@@ -111,64 +132,61 @@ export default function IconListItem({
           )}
         </View>
       )}
-    </TouchableOpacity>
+    </>
   );
+
+  const rowClass = `
+    flex-row items-center gap-3 rounded-2xl border border-border bg-card p-4
+    ${disabled ? "opacity-50" : ""}
+    ${className}
+  `;
+
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        className={rowClass}
+        activeOpacity={0.7}
+        onPress={onPress}
+        disabled={disabled}
+        accessibilityRole="button"
+      >
+        {body}
+      </TouchableOpacity>
+    );
+  }
+
+  return <View className={rowClass}>{body}</View>;
 }
 
-// IconListItem usage examples:
-
-// {/* Icon instead of emoji */}
-// <IconListItem
-//   leftIcon="map-marker"
-//   label="Office"
-//   subtitle="123 Main St"
-//   onPress={...}
-//   onEdit={...}
-// />
-
-// {/* No delete */}
-// <IconListItem
-//   icon="🏠"
-//   label="Home"
-//   subtitle={address}
-//   onPress={openEdit}
-//   onEdit={openEdit}
-// />
-
-// {/* Read-only row */}
-// <IconListItem
-//   icon="⭐"
-//   label="Favorite"
-//   subtitle="Saved place"
-//   showEdit={false}
-//   showDelete={false}
-// />
-
-
-
-// {/* Icon instead of emoji */}
-// <IconListItem
-//   leftIcon="map-marker"
-//   label="Office"
-//   subtitle="123 Main St"
-//   onPress={...}
-//   onEdit={...}
-// />
-
-// {/* No delete */}
+// Usage — model status rows (FLStatusScreen):
+//
+// <View className="mb-4 gap-2.5">
+//   {MODELS.map((model) => (
+//     <IconListItem
+//       key={model.type}
+//       leftIcon={model.icon}
+//       iconBoxVariant="primary"
+//       label={model.label}
+//       subtitle={model.desc}
+//       rightContent={
+//         <Badge
+//           label={flStatus.hasModels ? "Active" : "Pending"}
+//           variant={flStatus.hasModels ? "success" : "warning"}
+//           size="sm"
+//           shape="pill"
+//         />
+//       }
+//     />
+//   ))}
+// </View>
+//
+// Usage — place with edit/delete:
+//
 // <IconListItem
 //   icon="🏠"
 //   label="Home"
 //   subtitle={address}
 //   onPress={openEdit}
 //   onEdit={openEdit}
-// />
-
-// {/* Read-only row */}
-// <IconListItem
-//   icon="⭐"
-//   label="Favorite"
-//   subtitle="Saved place"
-//   showEdit={false}
-//   showDelete={false}
+//   onDelete={remove}
 // />

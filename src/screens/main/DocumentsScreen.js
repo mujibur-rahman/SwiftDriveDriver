@@ -111,7 +111,7 @@ export default function DocumentsScreen({ navigation }) {
         contentContainerClassName="px-4 pb-10"
         showsVerticalScrollIndicator={false}
       >
-        <StatusBanner {...bannerProps} />
+        <StatusBanner {...bannerProps} className="mb-5" />
 
         {/* Document list */}
         <View className="gap-2.5">
