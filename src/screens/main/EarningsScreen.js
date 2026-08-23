@@ -1,10 +1,11 @@
 // src/screens/main/EarningsScreen.js
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchEarnings, fetchRideHistory, setPeriod } from '../../store/slices/earningsSlice';
+import { setPeriod } from '@/features/earnings/earningsSlice';
+import { useGetEarningsQuery, useGetRideHistoryQuery } from '@/features/earnings/earningsApi';
 import { useTheme } from '@/theme';
 import ScreenHeader from '@/components/ui/ScreenHeader';
 import Button from '@/components/ui/Button';
@@ -20,7 +21,7 @@ const MOCK_CHART = [
 
 export default function EarningsScreen() {
   const dispatch = useDispatch();
-  const { summary, history, loading, period } = useSelector((s) => s.earnings);
+  const { period } = useSelector((s) => s.earnings);
   const { todayStats } = useSelector((s) => s.driver);
   const { colors, isDark } = useTheme();
   const primary = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
@@ -28,10 +29,14 @@ export default function EarningsScreen() {
   const warning = isDark ? '#FBBF24' : '#D97706';
   const info = isDark ? '#60A5FA' : '#2563EB';
 
-  useEffect(() => { dispatch(fetchEarnings({ period })); dispatch(fetchRideHistory()); }, [period]);
+  const { data: earningsData, isLoading: earningsLoading } = useGetEarningsQuery({ period });
+  const { data: history = [], isLoading: historyLoading } = useGetRideHistoryQuery();
+
+  const summary = earningsData?.summary ?? null;
+  const chartData = earningsData?.chartData ?? [];
+  const loading = earningsLoading || historyLoading;
 
   const PERIODS = ['today', 'week', 'month', 'year'];
-  const chartData = summary?.chartData || [];
   //const maxAmount = Math.max(...MOCK_CHART.map((d) => d.amount));
   const maxAmount = Math.max(...(chartData.map((d) => d.amount) || [1]), 1);
 
