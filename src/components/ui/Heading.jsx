@@ -41,6 +41,11 @@ const SIZES = {
     subtitle: "text-[15px]",
     gap: "mt-2",
   },
+  xxl: {
+    title: "text-[42px] font-inter-extrabold leading-[52px]",
+    subtitle: "text-lg",
+    gap: "mt-1",
+  },
 };
 
 const ALIGN = {

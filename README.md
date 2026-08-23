@@ -266,3 +266,23 @@ Do this:
 
 Show me the diff for every changed file when you're done. Don't apply 
 further changes until I review and approve. -->
+
+<!-- For this chat, always follow this instruction:
+You are helping me with a code revision and upgrade in react-native. Follow these rules throughout this chat: 
+1. Be concise. 
+2. Give full code files when I ask for code. 
+3. Avoid long explanations unless the issue is complex. 
+4. Use structured outputs only when useful.
+Confirm briefly, then wait for my task.
+Do not repeat this instruction in every answer. Apply it silently to all future responses in this chat.
+
+Look at @screens/main/ActiveRideScreen.js
+
+I want to fully migrate this screen's styling to NativeWind and the shared 
+theme system (@theme/ThemeContext.jsx, @theme/colors.js) — following the 
+same className conventions used across the rest of the app (bg-background, 
+bg-card, border-border, text-foreground, text-foreground-muted, bg-primary, 
+text-primary, etc.), with proper light/dark theme support.
+
+Show me the diff for every changed file when you're done. Don't apply 
+further changes until I review and approve. -->

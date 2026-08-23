@@ -22,6 +22,7 @@ import Badge from "@/components/ui/Badge";
 import StatusBanner from "@/components/ui/StatusBanner";
 import Heading from "@/components/ui/Heading";
 import IconListItem from "@/components/ui/IconListItem";
+import StatGrid from "@/components/ui/StatGrid";
 
 const MODELS = [
   {
@@ -143,25 +144,12 @@ export default function FLStatusScreen({ navigation }) {
         )}
 
         {/* Stats */}
-        <View className="mb-5 flex-row flex-wrap gap-2.5">
-          {statItems.map((s) => (
-            <View
-              key={s.label}
-              className="min-w-[45%] flex-1 items-center gap-1.5 rounded-2xl border border-border bg-card p-4"
-            >
-              <Icon name={s.icon} size={24} color={s.color} />
-              <Text
-                className="text-xl font-inter-bold"
-                style={{ color: s.color }}
-              >
-                {s.value}
-              </Text>
-              <Text className="text-center text-[11px] font-inter text-foreground-muted">
-                {s.label}
-              </Text>
-            </View>
-          ))}
-        </View>
+        <StatGrid
+          wrap
+          iconSize={24}
+          items={statItems}
+          className="mb-5"
+        />
 
         <Heading subtitle="Model Status" size="xs" align="left" className="mb-3" subtitleClassName="font-inter-semibold uppercase tracking-[0.5px]" />
 

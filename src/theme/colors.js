@@ -64,14 +64,23 @@ export const lightColors = {
   "--color-accent": "#D4AF6A",
 };
 
-/** Hex values for places that still need raw colors (StatusBar, Navigation, Switch, etc.) */
+/**
+ * Hex values for places that still need raw colors
+ * (StatusBar, Navigation, Switch, vector icons, LinearGradient).
+ * Keep in sync with darkColors / lightColors / global.css — do not invent new hues here.
+ */
 export const themeHex = {
   dark: {
     background: "#060E1A",
+    backgroundSecondary: "#0D1E32",
+    backgroundMuted: "#162A44",
     card: "#0D1E32",
     border: "#1E3A5F",
     text: "#BAE6FD",
     primary: "#38BDF8",
+    primaryForeground: "#060E1A",
+    secondary: "#1E3A5F",
+    secondaryForeground: "#BAE6FD",
     foreground: "#F0F9FF",
     foregroundMuted: "#7DD3FC",
     success: "#34D399",
@@ -83,10 +92,15 @@ export const themeHex = {
   },
   light: {
     background: "#FFFFFF",
+    backgroundSecondary: "#F0F9FF",
+    backgroundMuted: "#E0F2FE",
     card: "#FFFFFF",
     border: "#BAE6FD",
     text: "#334155",
     primary: "#0EA5E9",
+    primaryForeground: "#FFFFFF",
+    secondary: "#E0F2FE",
+    secondaryForeground: "#0369A1",
     foreground: "#0F172A",
     foregroundMuted: "#64748B",
     success: "#16A34A",
