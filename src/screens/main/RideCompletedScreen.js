@@ -6,25 +6,31 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet,
-  Animated, ScrollView, Alert,
+  View, Text,
+  Animated, ScrollView,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from 'expo-linear-gradient'; // kept for success circle + earnings card accent
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { clearActiveRide } from '@/features/driver/driverSlice';
-import { saveTripLocally } from '../../services/database/tripStore';
+import { saveTripLocally } from '@/services/database/tripStore';
+import { useTheme } from '@/theme';
+import Button from '@/components/ui/Button';
 
 export default function RideCompletedScreen({ navigation }) {
-  const dispatch    = useDispatch();
+  const dispatch = useDispatch();
   const { activeRide, passenger, todayStats } = useSelector((s) => s.driver);
-  const fadeAnim    = useRef(new Animated.Value(0)).current;
-  const scaleAnim   = useRef(new Animated.Value(0.8)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const [saved, setSaved] = useState(false);
+
+  const { colors, isDark } = useTheme();
+  const primary = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
+  const info = isDark ? '#60A5FA' : '#2563EB';
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim,  { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, tension: 60 }),
     ]).start();
 
@@ -38,17 +44,17 @@ export default function RideCompletedScreen({ navigation }) {
     if (!activeRide) return;
     try {
       await saveTripLocally({
-        id:              activeRide.id,
-        serviceType:     activeRide.serviceType || 'ride',
-        pickupLat:       activeRide.pickup?.latitude,
-        pickupLng:       activeRide.pickup?.longitude,
-        destLat:         activeRide.destination?.latitude,
-        destLng:         activeRide.destination?.longitude,
-        distanceKm:      parseFloat(activeRide.distance) || null,
-        durationMinutes: parseInt(activeRide.duration)   || null,
-        actualFare:      activeRide.estimatedTotal || activeRide.fare,
-        surgeAtTime:     activeRide.surgeMultiplier || 1.0,
-        completedAt:     new Date().toISOString(),
+        id: activeRide.id,
+        serviceType: activeRide.serviceType || 'ride',
+        pickupLat: activeRide.pickup?.latitude,
+        pickupLng: activeRide.pickup?.longitude,
+        destLat: activeRide.destination?.latitude,
+        destLng: activeRide.destination?.longitude,
+        distanceKm: parseFloat(activeRide.distance) || null,
+        durationMinutes: parseInt(activeRide.duration) || null,
+        actualFare: activeRide.estimatedTotal || activeRide.fare,
+        surgeAtTime: activeRide.surgeMultiplier || 1.0,
+        completedAt: new Date().toISOString(),
       });
       setSaved(true);
       console.log('[RideCompleted] Trip saved locally for FL training');
@@ -57,7 +63,7 @@ export default function RideCompletedScreen({ navigation }) {
     }
   };
 
-  const earnings  = activeRide?.estimatedTotal
+  const earnings = activeRide?.estimatedTotal
     ? (activeRide.estimatedTotal * 0.8).toFixed(2)
     : '0.00';
 
@@ -67,44 +73,59 @@ export default function RideCompletedScreen({ navigation }) {
   };
 
   return (
-    <LinearGradient colors={['#0A0A0A', '#0A0A0A']} style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
-
+    <View className="flex-1 bg-background">
+      <ScrollView contentContainerClassName="flex-grow items-center px-6 pb-32 pt-16">
+        <Animated.View
+          className="w-full items-center"
+          style={{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }}
+        >
           {/* Success icon */}
-          <View style={styles.successCircle}>
-            <LinearGradient colors={['#00D95F', '#00B84F']} style={styles.successGrad}>
+          <View className="mb-5">
+            <LinearGradient
+              colors={['#00D95F', '#00B84F']}
+              style={{ width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center' }}
+            >
               <Icon name="check" size={48} color="#FFF" />
             </LinearGradient>
           </View>
 
-          <Text style={styles.title}>Trip Completed!</Text>
-          <Text style={styles.subtitle}>Great job! Your earnings have been added.</Text>
+          <Text className="mb-2 text-[28px] font-inter-extrabold text-foreground">Trip Completed!</Text>
+          <Text className="mb-6 text-center text-[15px] font-inter text-foreground-muted">
+            Great job! Your earnings have been added.
+          </Text>
 
           {/* Earnings card */}
-          <LinearGradient colors={['#FF6B35', '#C44A1F']} style={styles.earningsCard}>
-            <Text style={styles.earningsLabel}>You earned</Text>
-            <Text style={styles.earningsAmount}>${earnings}</Text>
+          <LinearGradient
+            colors={['#FF6B35', '#C44A1F']}
+            style={{ borderRadius: 20 }}
+            className="mb-5 w-full items-center gap-2 p-6"
+          >
+            <Text className="text-[14px] font-inter text-white/70">You earned</Text>
+            <Text className="text-[52px] font-inter-extrabold text-white">${earnings}</Text>
             {activeRide?.surgeMultiplier > 1 && (
-              <View style={styles.surgePill}>
-                <Text style={styles.surgeText}>⚡ {activeRide.surgeMultiplier}x surge applied</Text>
+              <View className="rounded-full bg-white/20 px-3.5 py-1">
+                <Text className="text-[13px] font-inter-semibold text-white">
+                  ⚡ {activeRide.surgeMultiplier}x surge applied
+                </Text>
               </View>
             )}
           </LinearGradient>
 
           {/* Trip summary */}
-          <View style={styles.summaryCard}>
+          <View className="mb-4 w-full gap-3.5 rounded-2xl border border-border bg-card p-4">
             {[
-              { icon: 'map-marker-outline',    label: 'Pickup',      value: activeRide?.pickupAddress      || '—' },
-              { icon: 'flag-checkered',        label: 'Destination', value: activeRide?.destinationAddress || '—' },
-              { icon: 'map-marker-distance',   label: 'Distance',    value: activeRide?.distance           || '—' },
-              { icon: 'clock-outline',         label: 'Duration',    value: activeRide?.duration           || '—' },
+              { icon: 'map-marker-outline', label: 'Pickup', value: activeRide?.pickupAddress || '—' },
+              { icon: 'flag-checkered', label: 'Destination', value: activeRide?.destinationAddress || '—' },
+              { icon: 'map-marker-distance', label: 'Distance', value: activeRide?.distance || '—' },
+              { icon: 'clock-outline', label: 'Duration', value: activeRide?.duration || '—' },
             ].map((item) => (
-              <View key={item.label} style={styles.summaryRow}>
-                <Icon name={item.icon} size={18} color="#FF6B35" />
-                <View style={styles.summaryInfo}>
-                  <Text style={styles.summaryLabel}>{item.label}</Text>
-                  <Text style={styles.summaryValue} numberOfLines={1}>{item.value}</Text>
+              <View key={item.label} className="flex-row items-center gap-3">
+                <Icon name={item.icon} size={18} color={primary} />
+                <View className="flex-1">
+                  <Text className="text-[11px] font-inter text-foreground-muted">{item.label}</Text>
+                  <Text className="mt-0.5 text-[14px] font-inter-medium text-foreground" numberOfLines={1}>
+                    {item.value}
+                  </Text>
                 </View>
               </View>
             ))}
@@ -112,34 +133,38 @@ export default function RideCompletedScreen({ navigation }) {
 
           {/* Passenger info */}
           {passenger && (
-            <View style={styles.passengerCard}>
-              <View style={styles.passengerAvatar}>
-                <Text style={styles.passengerAvatarText}>{passenger.name?.[0] || 'P'}</Text>
+            <View className="mb-4 w-full flex-row items-center gap-3.5 rounded-2xl border border-border bg-card p-4">
+              <View className="h-12 w-12 items-center justify-center rounded-full bg-primary">
+                <Text className="text-xl font-inter-extrabold text-primary-foreground">
+                  {passenger.name?.[0] || 'P'}
+                </Text>
               </View>
-              <View style={styles.passengerInfo}>
-                <Text style={styles.passengerName}>{passenger.name}</Text>
-                <Text style={styles.passengerRating}>⭐ {passenger.rating || '5.0'}</Text>
+              <View className="flex-1">
+                <Text className="text-[15px] font-inter-semibold text-foreground">{passenger.name}</Text>
+                <Text className="mt-0.5 text-[13px] font-inter text-foreground-muted">
+                  ⭐ {passenger.rating || '5.0'}
+                </Text>
               </View>
             </View>
           )}
 
           {/* FL notice */}
-          <View style={styles.flNotice}>
-            <Icon name="shield-check-outline" size={16} color="#4A9EFF" />
-            <Text style={styles.flNoticeText}>
+          <View className="mb-4 w-full flex-row items-center gap-2 rounded-xl border border-info/30 bg-info/10 p-2.5">
+            <Icon name="shield-check-outline" size={16} color={info} />
+            <Text className="flex-1 text-[12px] font-inter" style={{ color: info }}>
               Trip data saved locally for private AI training
             </Text>
           </View>
 
           {/* Today stats */}
-          <View style={styles.statsRow}>
+          <View className="w-full flex-row gap-4">
             {[
-              { label: "Today's Trips",    value: (todayStats?.trips || 0) },
+              { label: "Today's Trips", value: (todayStats?.trips || 0) },
               { label: "Today's Earnings", value: `$${(todayStats?.earnings || 0).toFixed(2)}` },
             ].map((s) => (
-              <View key={s.label} style={styles.statItem}>
-                <Text style={styles.statValue}>{s.value}</Text>
-                <Text style={styles.statLabel}>{s.label}</Text>
+              <View key={s.label} className="flex-1 items-center gap-1 rounded-2xl border border-border bg-card p-4">
+                <Text className="text-[22px] font-inter-extrabold" style={{ color: primary }}>{s.value}</Text>
+                <Text className="text-[11px] font-inter text-foreground-muted">{s.label}</Text>
               </View>
             ))}
           </View>
@@ -148,81 +173,11 @@ export default function RideCompletedScreen({ navigation }) {
       </ScrollView>
 
       {/* Done button */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.doneBtn} onPress={handleDone}>
-          <LinearGradient colors={['#FF6B35', '#E55A25']} style={styles.doneBtnGrad}>
-            <Text style={styles.doneBtnText}>Back to Drive</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+      <View className="absolute bottom-0 left-0 right-0 bg-background px-5 pb-8 pt-4">
+        <Button variant="primary" size="lg" onPress={handleDone}>
+          Back to Drive
+        </Button>
       </View>
-    </LinearGradient>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scroll:    { flexGrow: 1, padding: 24, paddingTop: 60, paddingBottom: 120 },
-  content:   { alignItems: 'center' },
-  successCircle: { marginBottom: 20 },
-  successGrad: {
-    width: 100, height: 100, borderRadius: 50,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  title:    { color: '#FFF', fontSize: 28, fontWeight: '800', marginBottom: 8 },
-  subtitle: { color: '#666', fontSize: 15, marginBottom: 24, textAlign: 'center' },
-  earningsCard: {
-    width: '100%', borderRadius: 20, padding: 24,
-    alignItems: 'center', marginBottom: 20, gap: 8,
-  },
-  earningsLabel:  { color: 'rgba(255,255,255,0.7)', fontSize: 14 },
-  earningsAmount: { color: '#FFF', fontSize: 52, fontWeight: '800' },
-  surgePill: {
-    backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20,
-    paddingHorizontal: 14, paddingVertical: 4,
-  },
-  surgeText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
-  summaryCard: {
-    width: '100%', backgroundColor: '#111', borderRadius: 16,
-    padding: 16, gap: 14, marginBottom: 16,
-    borderWidth: 1, borderColor: '#1E1E1E',
-  },
-  summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  summaryInfo:  { flex: 1 },
-  summaryLabel: { color: '#666', fontSize: 11 },
-  summaryValue: { color: '#FFF', fontSize: 14, fontWeight: '500', marginTop: 2 },
-  passengerCard: {
-    width: '100%', flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: '#111', borderRadius: 14, padding: 16, marginBottom: 16,
-    borderWidth: 1, borderColor: '#1E1E1E',
-  },
-  passengerAvatar: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: '#FF6B35', justifyContent: 'center', alignItems: 'center',
-  },
-  passengerAvatarText: { color: '#FFF', fontWeight: '800', fontSize: 20 },
-  passengerInfo:  { flex: 1 },
-  passengerName:  { color: '#FFF', fontSize: 15, fontWeight: '600' },
-  passengerRating:{ color: '#888', fontSize: 13, marginTop: 2 },
-  flNotice: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#4A9EFF15', borderRadius: 10, padding: 10,
-    borderWidth: 1, borderColor: '#4A9EFF30', marginBottom: 16, width: '100%',
-  },
-  flNoticeText: { color: '#4A9EFF', fontSize: 12, flex: 1 },
-  statsRow: {
-    flexDirection: 'row', gap: 16, width: '100%',
-  },
-  statItem: {
-    flex: 1, backgroundColor: '#111', borderRadius: 14, padding: 16,
-    alignItems: 'center', gap: 4, borderWidth: 1, borderColor: '#1E1E1E',
-  },
-  statValue: { color: '#FF6B35', fontSize: 22, fontWeight: '800' },
-  statLabel: { color: '#666', fontSize: 11 },
-  footer: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    padding: 20, backgroundColor: '#0A0A0A',
-  },
-  doneBtn:     { borderRadius: 14, overflow: 'hidden' },
-  doneBtnGrad: { height: 58, justifyContent: 'center', alignItems: 'center' },
-  doneBtnText: { color: '#FFF', fontSize: 17, fontWeight: '800' },
-});
