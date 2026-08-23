@@ -50,7 +50,6 @@ export default function FLStatusScreen({ navigation }) {
   const info = isDark ? "#60A5FA" : "#2563EB";
   const success = isDark ? "#34D399" : "#16A34A";
   const muted = isDark ? "#7DD3FC" : "#64748B";
-  const warning = isDark ? "#FBBF24" : "#D97706";
   const accent = colors?.accent ?? "#D4AF6A";
 
   const { flStatus, triggerManualTraining } = useFL();
@@ -177,7 +176,7 @@ export default function FLStatusScreen({ navigation }) {
               rightContent={
                 <Badge
                   label={flStatus.hasModels ? "Active" : "Pending"}
-                  variant={flStatus.hasModels ? "success" : "warning"}
+                  variant={flStatus.hasModels ? "success" : "muted"}
                   size="sm"
                   shape="pill"
                   className="self-center!"
