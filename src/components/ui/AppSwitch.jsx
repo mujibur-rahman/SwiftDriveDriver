@@ -1,17 +1,18 @@
 // src/components/ui/AppSwitch.jsx
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, Switch } from "react-native";
 import { useTheme } from "@/theme";
 
 /**
- * Themed Switch with optional label support
+ * Themed Switch — sizes + semantic colors from theme only
  *
  * Props:
  * - value: boolean
  * - onValueChange: (value: boolean) => void
  * - disabled?: boolean
- * - size?: "sm" | "md"
- * - activeColor?: string
+ * - size?: "sm" | "md" | "lg" | "xl" | number   // number = custom scale (1 = default)
+ * - color?: "primary" | "success" | "warning" | "error" | "info" | "accent"
+ * - activeColor?: string     // rare override (prefer `color`)
  * - inactiveTrack?: string
  * - inactiveThumb?: string
  * - label?: string | React.ReactNode
@@ -22,11 +23,29 @@ import { useTheme } from "@/theme";
  * - className?: string
  * - containerClassName?: string
  */
+
+const SIZE_PRESETS = {
+  sm: { scale: 0.75, label: "text-sm", gap: "gap-1.5" },
+  md: { scale: 1, label: "text-md", gap: "gap-2" },
+  lg: { scale: 1.15, label: "text-lg", gap: "gap-2.5" },
+  xl: { scale: 1.3, label: "text-xl", gap: "gap-3" },
+};
+
+const COLOR_KEYS = {
+  primary: "primary",
+  success: "success",
+  warning: "warning",
+  error: "error",
+  info: "info",
+  accent: "accent",
+};
+
 export default function AppSwitch({
   value = false,
   onValueChange,
   disabled = false,
   size = "md",
+  color = "primary",
   activeColor,
   inactiveTrack,
   inactiveThumb,
@@ -39,14 +58,35 @@ export default function AppSwitch({
   containerClassName = "",
   ...props
 }) {
-  const { colors, isDark } = useTheme();
-  const scale = size === "sm" ? 0.85 : 1;
+  const { colors } = useTheme();
 
-  const resolvedActive = activeColor ?? colors.primary;
+  const sizeConfig = useMemo(() => {
+    if (typeof size === "number") {
+      const scale = size;
+      let label = "text-sm";
+      if (scale < 0.85) label = "text-xs";
+      else if (scale >= 1.25) label = "text-base";
+      else if (scale >= 1.1) label = "text-[15px]";
+      return {
+        scale,
+        label,
+        gap: scale >= 1.2 ? "gap-3" : scale < 0.9 ? "gap-1.5" : "gap-2",
+      };
+    }
+    return SIZE_PRESETS[size] || SIZE_PRESETS.md;
+  }, [size]);
+
+  const resolvedActive = useMemo(() => {
+    if (activeColor) return activeColor;
+    const key = COLOR_KEYS[color] || "primary";
+    return colors?.[key] ?? colors?.primary;
+  }, [activeColor, color, colors]);
+
+  // Inactive from theme tokens only
   const resolvedInactiveTrack =
-    inactiveTrack ?? (isDark ? "#1E3A5F" : "#BAE6FD");
+    inactiveTrack ?? colors?.border ?? colors?.secondary;
   const resolvedInactiveThumb =
-    inactiveThumb ?? (isDark ? "#7DD3FC" : "#64748B");
+    inactiveThumb ?? colors?.foregroundMuted ?? colors?.text;
 
   const resolvedLabel = label ?? (value ? activeLabel : inactiveLabel);
 
@@ -57,11 +97,16 @@ export default function AppSwitch({
       disabled={disabled}
       trackColor={{
         false: resolvedInactiveTrack,
-        true: `${resolvedActive}80`,
+        true: `${resolvedActive}99`,
       }}
       thumbColor={value ? resolvedActive : resolvedInactiveThumb}
       ios_backgroundColor={resolvedInactiveTrack}
-      style={{ transform: [{ scaleX: scale }, { scaleY: scale }] }}
+      style={{
+        transform: [
+          { scaleX: sizeConfig.scale },
+          { scaleY: sizeConfig.scale },
+        ],
+      }}
       {...props}
     />
   );
@@ -74,9 +119,12 @@ export default function AppSwitch({
     if (typeof resolvedLabel === "string") {
       return (
         <Text
-          className={`text-[13px] font-inter ${
-            disabled ? "text-foreground-muted/60" : "text-foreground-muted"
-          } ${labelClassName}`}
+          className={`
+            font-inter
+            ${sizeConfig.label}
+            ${disabled ? "text-foreground-muted/60" : "text-foreground-muted"}
+            ${labelClassName}
+          `}
         >
           {resolvedLabel}
         </Text>
@@ -87,7 +135,7 @@ export default function AppSwitch({
 
   return (
     <View
-      className={`flex-row items-center gap-2 ${containerClassName || className}`}
+      className={`flex-row items-center ${sizeConfig.gap} ${containerClassName || className}`}
     >
       {labelPosition === "left" && renderLabel()}
       {switchElement}
@@ -96,23 +144,7 @@ export default function AppSwitch({
   );
 }
 
-// Usage examples:
-//
-// Standalone:
-// <AppSwitch value={enabled} onValueChange={setEnabled} />
-//
-// With active/inactive label:
-// <AppSwitch
-//   value={isOnline}
-//   onValueChange={toggleOnline}
-//   activeLabel="Go Offline"
-//   inactiveLabel="Go Online"
-// />
-//
-// With static label on right:
-// <AppSwitch
-//   value={notifications}
-//   onValueChange={setNotifications}
-//   label="Enable Notifications"
-//   labelPosition="right"
-// />
+// Usage:
+// <AppSwitch value={on} onValueChange={setOn} size="sm" color="success" />
+// <AppSwitch value={on} onValueChange={setOn} size="xl" color="error" activeLabel="On" inactiveLabel="Off" />
+// <AppSwitch value={on} onValueChange={setOn} size={1.4} color="info" />

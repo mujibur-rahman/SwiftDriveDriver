@@ -95,7 +95,7 @@ export default function OnlineStatus({
                                 }`}
                         />
                         <Text
-                            className={`text-[13px] font-inter-semibold ${isOnline ? "text-success" : "text-foreground-muted"
+                            className={`text-md font-inter-semibold ${isOnline ? "text-success" : "text-foreground-muted"
                                 }`}
                         >
                             {isOnline ? onlineLabel : offlineLabel}
@@ -106,6 +106,7 @@ export default function OnlineStatus({
                 {rightContent ??
                     (showSwitch ? (
                         <AppSwitch
+                            size="lg"
                             value={isOnline}
                             onValueChange={onToggleOnline}
                             activeLabel={activeSwitchLabel}
