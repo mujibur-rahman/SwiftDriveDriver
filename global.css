@@ -114,15 +114,19 @@
   }
 
   .service-grid {
-    @apply flex-row flex-wrap justify-start gap-4 py-5 border border-border rounded-[20px];
+    @apply mx-4 flex-row flex-wrap justify-start gap-y-5 gap-x-2 border border-border bg-card px-3 py-5 rounded-[20px];
+  }
+
+  .service-card {
+    @apply w-[30%] items-center;
   }
 
   .service-card-circle {
-    @apply items-center justify-center size-16 rounded-full bg-card border border-white/8;
+    @apply mb-2 size-14.5 items-center justify-center rounded-full border border-border bg-background-muted;
   }
 
   .service-card-title {
-    @apply font-inter-medium text-sm text-primary text-center;
+    @apply px-0.5 text-center text-xs font-inter-medium leading-4 text-primary;
   }
 
   .h1 {

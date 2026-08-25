@@ -20,15 +20,21 @@ import PayoutSettingsScreen from "@/screens/main/PayoutSettingsScreen";
 import NotificationsScreen from "@/screens/main/NotificationsScreen";
 import RideHistoryScreen from "@/screens/main/RideHistoryScreen";
 import FLStatusScreen from "@/screens/main/FLStatusScreen";
+import HomeScreen from "@/screens/main/home/HomeScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const TAB_CONFIG = {
-  Drive: {
+  Home: {
     label: "Home",
     icon: "home-outline",
     iconFocused: "home",
+  },
+  Driver: {
+    label: "Driver",
+    icon: "steering",
+    iconFocused: "steering",
   },
   Earnings: {
     label: "Activity",
@@ -165,7 +171,8 @@ function TabNavigator() {
         },
       }}
     >
-      <Tab.Screen name="Drive" component={DriverHomeScreen} />
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Driver" component={DriverHomeScreen} />
       <Tab.Screen name="Earnings" component={EarningsScreen} />
       <Tab.Screen name="Profile" component={DriverProfileScreen} />
     </Tab.Navigator>

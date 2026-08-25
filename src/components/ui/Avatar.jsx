@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
+import { useTheme } from "@/theme";
 import SvgIcon from "@/components/ui/SvgIcon";
 import { getName } from "@/utils/helpers";
 
@@ -18,7 +19,7 @@ const sizeMap = {
 
 export default function Avatar({
   name,
-  uri, // ← new: image URI
+  uri,
   size = "sm",
   onPress,
   icon = "user",
@@ -28,27 +29,32 @@ export default function Avatar({
   loading = false,
   activeOpacity = 0.7,
 }) {
+  const { colors } = useTheme();
+  const primary = colors?.primary;
+  const onPrimary = colors?.primaryForeground;
+
   const isNumber = typeof size === "number";
 
   const config = isNumber
     ? {
-        className: "",
-        text: size >= 56 ? "text-xl" : size >= 44 ? "text-lg" : "text-base",
-        icon: Math.round(size * 0.5),
-        spinner: size > 44 ? "large" : "small",
-        style: { width: size, height: size },
-      }
+      className: "",
+      text: size >= 56 ? "text-xl" : size >= 44 ? "text-lg" : "text-base",
+      icon: Math.round(size * 0.5),
+      spinner: size > 44 ? "large" : "small",
+      style: { width: size, height: size },
+    }
     : {
-        ...(sizeMap[size] || sizeMap.sm),
-        style: undefined,
-      };
+      ...(sizeMap[size] || sizeMap.sm),
+      style: undefined,
+    };
 
   let content = null;
 
   if (loading) {
-    content = <ActivityIndicator size={config.spinner} color="#38BDF8" />;
+    content = (
+      <ActivityIndicator size={config.spinner} color={onPrimary ?? primary} />
+    );
   } else if (uri) {
-    // Show image when URI is provided
     content = (
       <Image
         source={{ uri }}
@@ -58,12 +64,16 @@ export default function Avatar({
     );
   } else if (!showIcon && name) {
     content = (
-      <Text className={`avatar-text ${config.text} ${textClassName}`}>
+      <Text
+        className={`font-inter-bold text-primary-foreground ${config.text} ${textClassName}`}
+      >
         {getName(name)}
       </Text>
     );
   } else {
-    content = <SvgIcon name={icon} size={config.icon} color="#fff" />;
+    content = (
+      <SvgIcon name={icon} size={config.icon} color={onPrimary ?? primary} />
+    );
   }
 
   const Container = onPress && !loading ? TouchableOpacity : View;
@@ -74,10 +84,11 @@ export default function Avatar({
       activeOpacity={activeOpacity}
       disabled={loading}
       style={config.style}
+      accessibilityRole={onPress ? "button" : undefined}
       className={`
         ${config.className}
-        rounded-full bg-primary border border-border
-        items-center justify-center overflow-hidden
+        items-center justify-center overflow-hidden rounded-full
+        border border-border bg-primary
         ${loading ? "opacity-70" : ""}
         ${className}
       `}

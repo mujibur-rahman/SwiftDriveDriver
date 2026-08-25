@@ -3,17 +3,19 @@ import React from "react";
 import { View, Text } from "react-native";
 
 /**
- * Page / section heading + optional subtitle
+ * Page / section heading + optional subtitle.
+ *
+ * All text colors use NativeWind theme tokens (text-foreground,
+ * text-foreground-muted) so they respond to light / dark mode automatically.
  *
  * Props:
  * - title: string | ReactNode
  * - subtitle?: string | ReactNode
- * - size?: "sm" | "md" | "lg" | "xl"
- * - align?: "left" | "center" | "right"
- * - className?: string
- * - titleClassName?: string
- * - subtitleClassName?: string
- * - as?: "h1" | "h2" | "h3"   // semantic only; all render Text
+ * - size?: "xs" | "sm" | "md" | "lg" | "xl" | "xxl"   (default: "lg")
+ * - align?: "left" | "center" | "right"                 (default: "left")
+ * - className?: string         → extra classes on the wrapper View
+ * - titleClassName?: string    → extra classes on the title Text
+ * - subtitleClassName?: string → extra classes on the subtitle Text
  */
 const SIZES = {
   xs: {
