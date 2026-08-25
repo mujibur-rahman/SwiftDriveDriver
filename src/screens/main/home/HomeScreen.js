@@ -1,10 +1,16 @@
 // src/screens/main/home/HomeScreen.js
 
+import { useDispatch, useSelector } from 'react-redux';
 import { View, Text, StatusBar, ScrollView } from 'react-native';
+import { useDriverSocket } from '@/services/DriverSocketContext';
+import { useUpdateDriverStatusMutation } from '@/features/driver/driverApi';
+import { setOnlineStatus } from '@/features/driver/driverSlice';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import LogoAvatar from '@/components/ui/LogoAvatar';
 import ServiceCard from '@/components/ServiceCard';
+import OnlineStatus from '@/components/OnlineStatus';
+import OnlineWaiting from '@/components/OnlineWaiting';
 
 const JOBS = [
     { id: '1', title: 'Ride', icon: 'ride' },
@@ -18,8 +24,30 @@ const JOBS = [
 ];
 
 export default function HomeScreen() {
+    const dispatch = useDispatch();
+    const { isOnline } = useSelector((state) => state.driver);
+    const { driver } = useSelector((state) => state.auth);
+    const [updateDriverStatus] = useUpdateDriverStatusMutation();
+    const { goOnline, goOffline } = useDriverSocket();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
+
+    const toggleOnline = async (val) => {
+        dispatch(setOnlineStatus(val));
+        try {
+            console.log("[Toggle] sending to API:", { isOnline: val });
+            await updateDriverStatus({ isOnline: val }).unwrap();
+            if (val) goOnline();
+            else goOffline();
+            console.log(`[Driver] is_online set to ${val}`);
+        } catch (e) {
+            console.warn(
+                "[Driver] Failed to update online status:",
+                e?.data?.message || e.message,
+            );
+            dispatch(setOnlineStatus(!val));
+        }
+    };
 
     return (
         <View
@@ -39,7 +67,22 @@ export default function HomeScreen() {
                 showsVerticalScrollIndicator={false}
             >
                 {/* Header: Logo + Avatar + Greeting */}
-                <LogoAvatar />
+                <LogoAvatar name={driver?.name} useLogoAvatarClass={false} />
+
+                <OnlineStatus
+                    name={driver?.name}
+                    isOnline={isOnline}
+                    onToggleOnline={toggleOnline}
+                    absolute={false}
+                />
+
+                <OnlineWaiting
+                    isOnline={isOnline}
+                    onlineMessage="Waiting for ride requests..."
+                    offlineMessage="You are offline. Toggle to start receiving requests."
+                    showPulse={true}
+                    className="mb-4"
+                />
 
                 {/* ── Advertisement / Middle section ──────────────────── */}
                 {/* Height grows automatically with inner content.         */}
@@ -66,7 +109,7 @@ export default function HomeScreen() {
             {/* ── Service grid — always pinned to bottom ──────────────── */}
             {/* marginBottom clears the floating pill tab bar (~90px) + device bottom inset */}
             <View
-                className="service-grid"
+                className="service-grid mx-4"
                 style={{ marginBottom: insets.bottom + 90 }}
             >
                 {JOBS.map((job) => (

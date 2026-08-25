@@ -3,14 +3,12 @@ import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   Animated,
   Platform,
   Linking,
   Alert,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
-import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useDispatch, useSelector } from "react-redux";
 import { setOnlineStatus } from "@/features/driver/driverSlice";
@@ -22,11 +20,11 @@ import {
 import { downloadModels } from "@/services/fl/ModelManager";
 import { runInference } from "@/services/fl/FLInference";
 import { useTheme } from "@/theme";
-import AppSwitch from "@/components/ui/AppSwitch";
 import QuickActionsRow from "@/components/ui/QuickActionsRow";
 import StatRow from "@/components/ui/StatRow";
 import StatCardsRow from "@/components/ui/StatCardsRow";
 import Button from "@/components/ui/Button";
+import OnlineStatus from "@/components/OnlineStatus";
 
 export default function DriverHomeScreen({ navigation }) {
   const dispatch = useDispatch();
@@ -209,44 +207,12 @@ export default function DriverHomeScreen({ navigation }) {
         )}
       </MapView>
 
-      <LinearGradient
-        colors={gradTop}
-        className={`absolute left-0 right-0 top-0 px-5 pb-10 ${Platform.OS === "android" ? "pt-10" : "pt-12"
-          }`}
-        pointerEvents="box-none"
-      >
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-lg font-inter-bold text-foreground">
-              Hello, {driver?.name?.split(" ")[0] || "Driver"}
-            </Text>
-            <View
-              className={`mt-1 flex-row items-center gap-1.5 rounded-full border px-2.5 py-1 ${isOnline
-                ? "border-success/30 bg-success/10"
-                : "border-border bg-background-muted"
-                }`}
-            >
-              <View
-                className={`h-2 w-2 rounded-full ${isOnline ? "bg-success" : "bg-foreground-muted"
-                  }`}
-              />
-              <Text
-                className={`text-[13px] font-inter-semibold ${isOnline ? "text-success" : "text-foreground-muted"
-                  }`}
-              >
-                {isOnline ? "Online" : "Offline"}
-              </Text>
-            </View>
-          </View>
-
-          <AppSwitch
-            value={isOnline}
-            onValueChange={toggleOnline}
-            activeLabel="Go Offline"
-            inactiveLabel="Go Online"
-          />
-        </View>
-      </LinearGradient>
+      <OnlineStatus
+        showGreeting={true}
+        name={driver?.name}
+        isOnline={isOnline}
+        onToggleOnline={toggleOnline}
+      />
 
       <Animated.View
         className="absolute bottom-0 left-0 right-0 gap-4 rounded-t-3xl border-t border-border bg-card px-5 pb-28 pt-5"

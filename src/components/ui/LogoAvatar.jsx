@@ -1,40 +1,53 @@
+// src/components/ui/LogoAvatar.jsx
+import React from "react";
 import { Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Avatar from "@/components/ui/Avatar";
 import Greeting from "@/components/ui/Greeting";
 
-/**
- * LogoAvatar
- *
- * Renders the top header row: app logo name on the left, avatar on the right,
- * and the time-aware greeting below.
- *
- * Colours are driven entirely by NativeWind theme tokens so the component
- * responds correctly to light / dark mode switching.
- */
-const LogoAvatar = () => {
+export default function LogoAvatar({
+  appName = "ZyroAppg",
+  name = "Driver",
+  subtitle,
+  showGreeting = true,
+  avatarUri,
+  onAvatarPress,
+  profileRoute = "Profile",
+  className = "",
+  useLogoAvatarClass = true,
+  titleClassName = "",
+  rightContent,
+  children,
+}) {
   const navigation = useNavigation();
 
+  const handleAvatarPress =
+    onAvatarPress ??
+    (() => {
+      if (profileRoute) navigation.navigate(profileRoute);
+    });
+
+  const rootClass = [useLogoAvatarClass ? "logo-avatar" : null, className]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    // logo-avatar applies: mb-8 pt-5 (defined in global.css @layer components)
-    <View className="logo-avatar">
-      <View className="flex-row justify-between items-center">
-        {/* App name — accent italic style using theme primary token */}
-        <Text className="text-[26px] text-primary font-instrument-italic font-semibold">
-          ZyroApp
+    <View className={rootClass}>
+      <View className="flex-row items-center justify-between">
+        <Text
+          className={`text-[26px] font-instrument-italic font-semibold text-primary ${titleClassName}`}
+        >
+          {appName}
         </Text>
 
-        {/* User avatar — navigates to Profile on press */}
-        <Avatar
-          name="Alex Carter"
-          onPress={() => navigation.navigate("Profile")}
-        />
+        {rightContent ?? (
+          <Avatar name={name} uri={avatarUri} onPress={handleAvatarPress} />
+        )}
       </View>
 
-      {/* Time-aware greeting below the header row */}
-      <Greeting name="Alex Carter" />
+      {showGreeting ? <Greeting name={name} subtitle={subtitle} /> : null}
+
+      {children}
     </View>
   );
-};
-
-export default LogoAvatar;
+}
