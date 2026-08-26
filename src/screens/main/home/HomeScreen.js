@@ -1,7 +1,9 @@
 // src/screens/main/home/HomeScreen.js
 
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { View, Text, StatusBar, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useDriverSocket } from '@/services/DriverSocketContext';
 import { useUpdateDriverStatusMutation } from '@/features/driver/driverApi';
 import { setOnlineStatus } from '@/features/driver/driverSlice';
@@ -11,6 +13,7 @@ import LogoAvatar from '@/components/ui/LogoAvatar';
 import ServiceCard from '@/components/ServiceCard';
 import OnlineStatus from '@/components/OnlineStatus';
 import OnlineWaiting from '@/components/OnlineWaiting';
+import Button from '@/components/ui/Button';
 
 const JOBS = [
     { id: '1', title: 'Ride', icon: 'ride' },
@@ -25,12 +28,26 @@ const JOBS = [
 
 export default function HomeScreen() {
     const dispatch = useDispatch();
-    const { isOnline } = useSelector((state) => state.driver);
+    const navigation = useNavigation();
+    const { isOnline, incomingRide, rideStatus } = useSelector((state) => state.driver);
     const { driver } = useSelector((state) => state.auth);
     const [updateDriverStatus] = useUpdateDriverStatusMutation();
     const { goOnline, goOffline } = useDriverSocket();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
+
+    // Open IncomingRideModal when a new request arrives while on Home.
+    // Home lives inside Tab → must navigate on parent Stack.
+    useEffect(() => {
+        if (incomingRide && rideStatus === 'incoming') {
+            const parent = navigation.getParent();
+            if (parent) {
+                parent.navigate('IncomingRide');
+            } else {
+                navigation.navigate('IncomingRide');
+            }
+        }
+    }, [incomingRide, rideStatus, navigation]);
 
     const toggleOnline = async (val) => {
         dispatch(setOnlineStatus(val));
@@ -60,13 +77,11 @@ export default function HomeScreen() {
                 backgroundColor="transparent"
             />
 
-            {/* ── Scrollable upper content ─────────────────────────────── */}
             <ScrollView
                 className="flex-1 px-4"
                 contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Header: Logo + Avatar + Greeting */}
                 <LogoAvatar name={driver?.name} useLogoAvatarClass={false} />
 
                 <OnlineStatus
@@ -76,23 +91,52 @@ export default function HomeScreen() {
                     absolute={false}
                 />
 
-                <OnlineWaiting
-                    isOnline={isOnline}
-                    onlineMessage="Waiting for ride requests..."
-                    offlineMessage="You are offline. Toggle to start receiving requests."
-                    showPulse={true}
-                    className="mb-4"
-                />
+                {/* ── Status banner: 3 states ── */}
+                {!isOnline && (
+                    // State 1: OFFLINE — default message
+                    <OnlineWaiting
+                        isOnline={false}
+                        offlineMessage="You are offline. Toggle to start receiving requests."
+                        showPulse={false}
+                        className="mb-4"
+                    />
+                )}
 
-                {/* ── Advertisement / Middle section ──────────────────── */}
-                {/* Height grows automatically with inner content.         */}
-                {/* Future sections can be added below this card.          */}
+                {/* {isOnline && !incomingRide && ( */}
+                {isOnline && (
+                    // State 2: ONLINE but no ride yet — pulsing waiting banner
+                    <OnlineWaiting
+                        isOnline={true}
+                        onlineMessage="Waiting for ride requests..."
+                        showPulse={true}
+                        className="mb-4"
+                    />
+                )}
+
+                {/* {isOnline && incomingRide && ( */}
+                {isOnline && (
+                    // State 3: ONLINE + incoming ride — CTA button
+                    <Button
+                        variant="primary"
+                        size="md"
+                        leftIcon="car-arrow-right"
+                        className="mb-4"
+                        onPress={() => {
+                            const parent = navigation.getParent();
+                            if (parent) parent.navigate('Driver');
+                            else navigation.navigate('Driver');
+                        }}
+                    >
+                        You have 1 Ride Request — View Now
+                    </Button>
+                )}
+
+
                 <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-5 mb-2">
                     <Text className="text-xs font-inter-semibold text-foreground-muted mb-3 uppercase tracking-widest">
                         Advertisement
                     </Text>
 
-                    {/* Placeholder banner — replace with real ad component */}
                     <View className="rounded-xl bg-background-muted items-center justify-center py-10">
                         <Text className="text-primary font-inter-bold text-base">
                             Your ad will appear here
@@ -101,13 +145,9 @@ export default function HomeScreen() {
                             Promotions · Offers · Updates
                         </Text>
                     </View>
-
-                    {/* Future sections go below here */}
                 </View>
             </ScrollView>
 
-            {/* ── Service grid — always pinned to bottom ──────────────── */}
-            {/* marginBottom clears the floating pill tab bar (~90px) + device bottom inset */}
             <View
                 className="service-grid mx-4"
                 style={{ marginBottom: insets.bottom + 90 }}

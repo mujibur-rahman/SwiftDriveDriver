@@ -25,6 +25,7 @@ import StatRow from "@/components/ui/StatRow";
 import StatCardsRow from "@/components/ui/StatCardsRow";
 import Button from "@/components/ui/Button";
 import OnlineStatus from "@/components/OnlineStatus";
+import OnlineWaiting from "@/components/OnlineWaiting";
 
 export default function DriverHomeScreen({ navigation }) {
   const dispatch = useDispatch();
@@ -285,21 +286,24 @@ export default function DriverHomeScreen({ navigation }) {
           Test Inference
         </Button>
 
-        {isOnline ? (
-          <View className="flex-row items-center gap-3 rounded-xl border border-primary/30 bg-primary/10 p-3.5">
-            <View className="h-5 w-5 items-center justify-center rounded-full bg-primary/30">
-              <View className="h-2.5 w-2.5 rounded-full bg-primary" />
-            </View>
-            <Text className="text-sm font-inter-medium text-primary">
-              Waiting for ride requests...
-            </Text>
-          </View>
-        ) : (
-          <View className="items-center rounded-xl bg-background-muted p-3.5">
-            <Text className="text-center text-sm font-inter text-foreground-muted">
-              You are offline. Toggle to start receiving requests.
-            </Text>
-          </View>
+        {!isOnline && (
+          // State 1: OFFLINE — default message
+          <OnlineWaiting
+            isOnline={false}
+            offlineMessage="You are offline. Toggle to start receiving requests."
+            showPulse={false}
+            className="mb-4"
+          />
+        )}
+
+        {isOnline && (
+          // State 2: ONLINE but no ride yet — pulsing waiting banner
+          <OnlineWaiting
+            isOnline={true}
+            onlineMessage="Waiting for ride requests..."
+            showPulse={true}
+            className="mb-4"
+          />
         )}
 
         {/* <View className="flex-row justify-between">

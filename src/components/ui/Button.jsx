@@ -59,6 +59,12 @@ const SIZES = {
     iconBox: "size-12",
     icon: 24,
   },
+  link: {
+    text: "text-sm",
+    px: "px-0",
+    iconBox: "size-8",
+    icon: 18,
+  },
 };
 
 export default function Button({
