@@ -118,7 +118,7 @@ export default function HomeScreen() {
                     // State 3: ONLINE + incoming ride — CTA button
                     <Button
                         variant="primary"
-                        size="md"
+                        size="sm"
                         leftIcon="car-arrow-right"
                         className="mb-4"
                         onPress={() => {
@@ -128,6 +128,23 @@ export default function HomeScreen() {
                         }}
                     >
                         You have 1 Ride Request — View Now
+                    </Button>
+                )}
+
+                {isOnline && (
+                    // State 3: ONLINE + incoming ride — CTA button
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        leftIcon="car-arrow-right"
+                        className="mb-4"
+                        onPress={() => {
+                            const parent = navigation.getParent();
+                            if (parent) parent.navigate('FoodDelivery');
+                            else navigation.navigate('FoodDelivery');
+                        }}
+                    >
+                        You have 1 Food Delivery Request — View Now
                     </Button>
                 )}
 

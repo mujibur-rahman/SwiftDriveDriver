@@ -21,6 +21,7 @@ import NotificationsScreen from "@/screens/main/NotificationsScreen";
 import RideHistoryScreen from "@/screens/main/RideHistoryScreen";
 import FLStatusScreen from "@/screens/main/FLStatusScreen";
 import HomeScreen from "@/screens/main/home/HomeScreen";
+import FoodDeliveryScreen from "@/screens/main/food/FoodDeliveryScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -201,6 +202,7 @@ export default function MainNavigator({ navigationRef }) {
       <Stack.Screen name="Notifications" component={NotificationsScreen} />
       <Stack.Screen name="RideHistory" component={RideHistoryScreen} />
       <Stack.Screen name="FLStatus" component={FLStatusScreen} />
+      <Stack.Screen name="FoodDelivery" component={FoodDeliveryScreen} />
       <Stack.Screen
         name="IncomingRide"
         component={IncomingRideModal}
