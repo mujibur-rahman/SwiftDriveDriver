@@ -286,3 +286,16 @@ text-primary, etc.), with proper light/dark theme support.
 
 Show me the diff for every changed file when you're done. Don't apply 
 further changes until I review and approve. -->
+
+
+<!-- 
+Look at @components/ui/AppModal.jsx, @navigation/MainNavigator.js, @screens/main/home/HomeScreen.js, @components/ServiceCard.jsx and @screens/main/food/FoodDeliveryScreen.js.
+
+After 'Go Online,' I want to press 'Food Delivery Request,' and then I want a pop-up screen. Can you see AppModal.jsx? Can we use that modal? There have map, Accept and Decline(20s) buttons, Dollar, Restaurant name, customer area, distance, kilometers, and minutes.
+
+If I accept that request, then it will go to the next screen, 'navigation to Restaurant (Pickup)'.
+
+At Restaurant - confirm pickup
+
+Create me static, and then in the future we will do dynamic. You can see the @components/us files. There have lot of reusable components. I want to reuse those components.
+ -->

@@ -1,6 +1,6 @@
 // src/screens/main/home/HomeScreen.js
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { View, Text, StatusBar, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -14,6 +14,7 @@ import ServiceCard from '@/components/ServiceCard';
 import OnlineStatus from '@/components/OnlineStatus';
 import OnlineWaiting from '@/components/OnlineWaiting';
 import Button from '@/components/ui/Button';
+import IncomingFoodDeliveryModal from '@/components/food/IncomingFoodDeliveryModal';
 
 const JOBS = [
     { id: '1', title: 'Ride', icon: 'ride' },
@@ -35,6 +36,9 @@ export default function HomeScreen() {
     const { goOnline, goOffline } = useDriverSocket();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
+
+    // Food delivery incoming request modal
+    const [foodModalVisible, setFoodModalVisible] = useState(false);
 
     // Open IncomingRideModal when a new request arrives while on Home.
     // Home lives inside Tab → must navigate on parent Stack.
@@ -92,8 +96,9 @@ export default function HomeScreen() {
                 />
 
                 {/* ── Status banner: 3 states ── */}
+
+                {/* State 1: OFFLINE — default message */}
                 {!isOnline && (
-                    // State 1: OFFLINE — default message
                     <OnlineWaiting
                         isOnline={false}
                         offlineMessage="You are offline. Toggle to start receiving requests."
@@ -102,50 +107,43 @@ export default function HomeScreen() {
                     />
                 )}
 
-                {/* {isOnline && !incomingRide && ( */}
+                {/* State 2: ONLINE, waiting — pulsing banner */}
                 {isOnline && (
-                    // State 2: ONLINE but no ride yet — pulsing waiting banner
                     <OnlineWaiting
                         isOnline={true}
-                        onlineMessage="Waiting for ride requests..."
+                        onlineMessage="Waiting for requests..."
                         showPulse={true}
-                        className="mb-4"
+                        className="mb-2"
                     />
                 )}
 
-                {/* {isOnline && incomingRide && ( */}
+                {/* State 3: ONLINE — incoming request buttons */}
                 {isOnline && (
-                    // State 3: ONLINE + incoming ride — CTA button
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        leftIcon="car-arrow-right"
-                        className="mb-4"
-                        onPress={() => {
-                            const parent = navigation.getParent();
-                            if (parent) parent.navigate('Driver');
-                            else navigation.navigate('Driver');
-                        }}
-                    >
-                        You have 1 Ride Request — View Now
-                    </Button>
-                )}
+                    <View className="gap-2 mb-4">
+                        {/* Ride request */}
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            leftIcon="car-arrow-right"
+                            onPress={() => {
+                                const parent = navigation.getParent();
+                                if (parent) parent.navigate('Driver');
+                                else navigation.navigate('Driver');
+                            }}
+                        >
+                            You have 1 Ride Request — View Now
+                        </Button>
 
-                {isOnline && (
-                    // State 3: ONLINE + incoming ride — CTA button
-                    <Button
-                        variant="primary"
-                        size="sm"
-                        leftIcon="car-arrow-right"
-                        className="mb-4"
-                        onPress={() => {
-                            const parent = navigation.getParent();
-                            if (parent) parent.navigate('FoodDelivery');
-                            else navigation.navigate('FoodDelivery');
-                        }}
-                    >
-                        You have 1 Food Delivery Request — View Now
-                    </Button>
+                        {/* Food delivery request → opens modal */}
+                        <Button
+                            variant="warning"
+                            size="sm"
+                            leftIcon="food"
+                            onPress={() => setFoodModalVisible(true)}
+                        >
+                            You have 1 Food Delivery Request — View Now
+                        </Button>
+                    </View>
                 )}
 
 
@@ -173,6 +171,18 @@ export default function HomeScreen() {
                     <ServiceCard key={job.id} job={job} />
                 ))}
             </View>
+
+            {/* ── Food Delivery incoming request modal ── */}
+            <IncomingFoodDeliveryModal
+                visible={foodModalVisible}
+                onDecline={() => setFoodModalVisible(false)}
+                onAccept={() => {
+                    setFoodModalVisible(false);
+                    const parent = navigation.getParent();
+                    if (parent) parent.navigate('FoodDelivery');
+                    else navigation.navigate('FoodDelivery');
+                }}
+            />
         </View>
     );
 }
