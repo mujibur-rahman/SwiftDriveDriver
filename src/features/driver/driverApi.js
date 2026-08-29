@@ -184,6 +184,30 @@ export const driverApi = apiSlice.injectEndpoints({
         } catch { }
       },
     }),
+
+    // src/features/driver/driverApi.js  (add endpoint)
+
+    completeFoodDelivery: builder.mutation({
+      query: ({ orderId, deliveryMethod, photoUri }) => ({
+        url: `/orders/${orderId}/complete`,
+        method: 'POST',
+        body: { deliveryMethod, photoUri },
+      }),
+      invalidatesTags: ['Earnings', 'Driver', 'Ride'],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          // data example:
+          // { orderId, baseFare, tip, bonus, total, currency: 'USD' }
+          dispatch(
+            updateTodayStats({
+              tripsDelta: 1,
+              earningsDelta: data.total ?? 0,
+            }),
+          );
+        } catch { }
+      },
+    }),
   }),
 });
 
@@ -198,4 +222,5 @@ export const {
   useRejectRideMutation,
   useStartRideMutation,
   useCompleteRideMutation,
+  useCompleteFoodDeliveryMutation,
 } = driverApi;

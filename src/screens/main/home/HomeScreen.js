@@ -1,20 +1,29 @@
 // src/screens/main/home/HomeScreen.js
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { View, Text, StatusBar, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import MapView, { Marker, Polyline } from 'react-native-maps';
+import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useDriverSocket } from '@/services/DriverSocketContext';
 import { useUpdateDriverStatusMutation } from '@/features/driver/driverApi';
-import { setOnlineStatus } from '@/features/driver/driverSlice';
+import {
+    setOnlineStatus,
+    setFoodOrderStatus,
+} from '@/features/driver/driverSlice';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
+import { DARK_MAP_STYLE } from '@/utils/mapStyles';
 import LogoAvatar from '@/components/ui/LogoAvatar';
 import ServiceCard from '@/components/ServiceCard';
 import OnlineStatus from '@/components/OnlineStatus';
 import OnlineWaiting from '@/components/OnlineWaiting';
 import Button from '@/components/ui/Button';
 import IncomingFoodDeliveryModal from '@/components/food/IncomingFoodDeliveryModal';
+
+const DEMO_RESTAURANT_COORDS = { latitude: -33.8842, longitude: 151.2101 };
+const DEMO_DRIVER = { latitude: -33.876, longitude: 151.203 };
 
 const JOBS = [
     { id: '1', title: 'Ride', icon: 'ride' },
@@ -30,158 +39,230 @@ const JOBS = [
 export default function HomeScreen() {
     const dispatch = useDispatch();
     const navigation = useNavigation();
-    const { isOnline, incomingRide, rideStatus } = useSelector((state) => state.driver);
+    const { isOnline, incomingRide, rideStatus, currentLocation } = useSelector(
+        (state) => state.driver,
+    );
     const { driver } = useSelector((state) => state.auth);
     const [updateDriverStatus] = useUpdateDriverStatusMutation();
     const { goOnline, goOffline } = useDriverSocket();
     const insets = useSafeAreaInsets();
-    const { colors } = useTheme();
+    const { colors, isDark } = useTheme();
+    const mapRef = useRef(null);
 
-    // Food delivery incoming request modal
+    const primaryHex = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
+    const warningHex = isDark ? '#FBBF24' : '#D97706';
+
     const [foodModalVisible, setFoodModalVisible] = useState(false);
 
-    // Open IncomingRideModal when a new request arrives while on Home.
-    // Home lives inside Tab → must navigate on parent Stack.
     useEffect(() => {
         if (incomingRide && rideStatus === 'incoming') {
             const parent = navigation.getParent();
-            if (parent) {
-                parent.navigate('IncomingRide');
-            } else {
-                navigation.navigate('IncomingRide');
-            }
+            if (parent) parent.navigate('IncomingRide');
+            else navigation.navigate('IncomingRide');
         }
     }, [incomingRide, rideStatus, navigation]);
+
+    useEffect(() => {
+        if (!foodModalVisible || !mapRef.current) return;
+        const driverPos = currentLocation ?? DEMO_DRIVER;
+        const rest = DEMO_RESTAURANT_COORDS;
+        const midLat = (driverPos.latitude + rest.latitude) / 2;
+        const midLng = (driverPos.longitude + rest.longitude) / 2;
+        const deltaLat = Math.max(
+            Math.abs(driverPos.latitude - rest.latitude) * 1.6,
+            0.018,
+        );
+        const deltaLng = Math.max(
+            Math.abs(driverPos.longitude - rest.longitude) * 1.6,
+            0.018,
+        );
+        setTimeout(() => {
+            mapRef.current?.animateToRegion(
+                {
+                    latitude: midLat,
+                    longitude: midLng,
+                    latitudeDelta: deltaLat,
+                    longitudeDelta: deltaLng,
+                },
+                600,
+            );
+        }, 300);
+    }, [foodModalVisible, currentLocation]);
 
     const toggleOnline = async (val) => {
         dispatch(setOnlineStatus(val));
         try {
-            console.log("[Toggle] sending to API:", { isOnline: val });
             await updateDriverStatus({ isOnline: val }).unwrap();
             if (val) goOnline();
             else goOffline();
-            console.log(`[Driver] is_online set to ${val}`);
         } catch (e) {
             console.warn(
-                "[Driver] Failed to update online status:",
+                '[Driver] Failed to update online status:',
                 e?.data?.message || e.message,
             );
             dispatch(setOnlineStatus(!val));
         }
     };
 
+    const openFoodModal = () => {
+        dispatch(setFoodOrderStatus('incoming'));
+        setFoodModalVisible(true);
+    };
+
+    const onFoodDecline = () => {
+        setFoodModalVisible(false);
+        dispatch(setFoodOrderStatus('idle'));
+    };
+
+    const onFoodAccept = () => {
+        setFoodModalVisible(false);
+        dispatch(setFoodOrderStatus('active'));
+        const parent = navigation.getParent();
+        if (parent) parent.navigate('FoodDelivery');
+        else navigation.navigate('FoodDelivery');
+    };
+
     return (
-        <View
-            className="flex-1 bg-background"
-            style={{ paddingTop: insets.top }}
-        >
-            <StatusBar
-                barStyle="light-content"
-                translucent
-                backgroundColor="transparent"
-            />
+        <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-            <ScrollView
-                className="flex-1 px-4"
-                contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
-                showsVerticalScrollIndicator={false}
-            >
-                <LogoAvatar name={driver?.name} useLogoAvatarClass={false} />
-
-                <OnlineStatus
-                    name={driver?.name}
-                    isOnline={isOnline}
-                    onToggleOnline={toggleOnline}
-                    absolute={false}
-                />
-
-                {/* ── Status banner: 3 states ── */}
-
-                {/* State 1: OFFLINE — default message */}
-                {!isOnline && (
-                    <OnlineWaiting
-                        isOnline={false}
-                        offlineMessage="You are offline. Toggle to start receiving requests."
-                        showPulse={false}
-                        className="mb-4"
-                    />
-                )}
-
-                {/* State 2: ONLINE, waiting — pulsing banner */}
-                {isOnline && (
-                    <OnlineWaiting
-                        isOnline={true}
-                        onlineMessage="Waiting for requests..."
-                        showPulse={true}
-                        className="mb-2"
-                    />
-                )}
-
-                {/* State 3: ONLINE — incoming request buttons */}
-                {isOnline && (
-                    <View className="gap-2 mb-4">
-                        {/* Ride request */}
-                        <Button
-                            variant="primary"
-                            size="sm"
-                            leftIcon="car-arrow-right"
-                            onPress={() => {
-                                const parent = navigation.getParent();
-                                if (parent) parent.navigate('Driver');
-                                else navigation.navigate('Driver');
+            {/* Incoming food modal → map backdrop */}
+            {foodModalVisible && (
+                <MapView
+                    ref={mapRef}
+                    style={{ flex: 1 }}
+                    customMapStyle={isDark ? DARK_MAP_STYLE : undefined}
+                    showsUserLocation
+                    showsMyLocationButton={false}
+                    initialRegion={{
+                        ...DEMO_RESTAURANT_COORDS,
+                        latitudeDelta: 0.028,
+                        longitudeDelta: 0.028,
+                    }}
+                >
+                    <Marker
+                        coordinate={DEMO_RESTAURANT_COORDS}
+                        title="Hungry Jack's"
+                        description="Pickup location"
+                    >
+                        <View
+                            style={{
+                                width: 48,
+                                height: 48,
+                                borderRadius: 24,
+                                backgroundColor: `${warningHex}28`,
+                                borderWidth: 2.5,
+                                borderColor: warningHex,
+                                alignItems: 'center',
+                                justifyContent: 'center',
                             }}
                         >
-                            You have 1 Ride Request — View Now
-                        </Button>
+                            <Icon name="storefront-outline" size={22} color={warningHex} />
+                        </View>
+                    </Marker>
+                    {currentLocation && (
+                        <Polyline
+                            coordinates={[currentLocation, DEMO_RESTAURANT_COORDS]}
+                            strokeColor={primaryHex}
+                            strokeWidth={3}
+                            lineDashPattern={[8, 4]}
+                        />
+                    )}
+                </MapView>
+            )}
 
-                        {/* Food delivery request → opens modal */}
-                        <Button
-                            variant="warning"
-                            size="sm"
-                            leftIcon="food"
-                            onPress={() => setFoodModalVisible(true)}
-                        >
-                            You have 1 Food Delivery Request — View Now
-                        </Button>
+            {/* Normal home */}
+            {!foodModalVisible && (
+                <>
+                    <ScrollView
+                        className="flex-1"
+                        contentContainerStyle={{
+                            paddingHorizontal: 16,
+                            paddingBottom: 16,
+                        }}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        <LogoAvatar size={40} className='mb-1' />
+
+                        <OnlineStatus
+                            name={driver?.name}
+                            isOnline={isOnline}
+                            onToggleOnline={toggleOnline}
+                            absolute={false}
+                        />
+
+                        {!isOnline && (
+                            <OnlineWaiting
+                                isOnline={false}
+                                offlineMessage="You are offline. Toggle to start receiving requests."
+                                showPulse={false}
+                                className="mb-4 mt-3"
+                            />
+                        )}
+
+                        {isOnline && (
+                            <View className="mt-3 mb-3 gap-3">
+                                <OnlineWaiting
+                                    isOnline={true}
+                                    onlineMessage="Waiting for requests..."
+                                    showPulse={true}
+                                />
+
+                                <View className="gap-2">
+                                    <Button
+                                        variant="primary"
+                                        size="sm"
+                                        leftIcon="car-arrow-right"
+                                        onPress={() => {
+                                            const parent = navigation.getParent();
+                                            if (parent) parent.navigate('Driver');
+                                            else navigation.navigate('Driver');
+                                        }}
+                                    >
+                                        You have 1 Ride Request — View Now
+                                    </Button>
+                                    <Button
+                                        variant="warning"
+                                        size="sm"
+                                        leftIcon="food"
+                                        onPress={openFoodModal}
+                                    >
+                                        You have 1 Food Delivery Request — View Now
+                                    </Button>
+                                </View>
+                            </View>
+                        )}
+
+                        <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-4 mb-4">
+                            <Text className="text-xs font-inter-semibold text-foreground-muted mb-3 uppercase tracking-widest">
+                                Advertisement
+                            </Text>
+                            <View className="rounded-xl bg-background-muted items-center justify-center py-10">
+                                <Text className="text-primary font-inter-bold text-base">
+                                    Your ad will appear here
+                                </Text>
+                                <Text className="text-foreground-muted font-inter text-xs mt-1">
+                                    Promotions · Offers · Updates
+                                </Text>
+                            </View>
+                        </View>
+                    </ScrollView>
+
+                    <View
+                        className="service-grid mx-4"
+                        style={{ marginBottom: insets.bottom + 90 }}
+                    >
+                        {JOBS.map((job) => (
+                            <ServiceCard key={job.id} job={job} />
+                        ))}
                     </View>
-                )}
+                </>
+            )}
 
-
-                <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-5 mb-2">
-                    <Text className="text-xs font-inter-semibold text-foreground-muted mb-3 uppercase tracking-widest">
-                        Advertisement
-                    </Text>
-
-                    <View className="rounded-xl bg-background-muted items-center justify-center py-10">
-                        <Text className="text-primary font-inter-bold text-base">
-                            Your ad will appear here
-                        </Text>
-                        <Text className="text-foreground-muted font-inter text-xs mt-1">
-                            Promotions · Offers · Updates
-                        </Text>
-                    </View>
-                </View>
-            </ScrollView>
-
-            <View
-                className="service-grid mx-4"
-                style={{ marginBottom: insets.bottom + 90 }}
-            >
-                {JOBS.map((job) => (
-                    <ServiceCard key={job.id} job={job} />
-                ))}
-            </View>
-
-            {/* ── Food Delivery incoming request modal ── */}
             <IncomingFoodDeliveryModal
                 visible={foodModalVisible}
-                onDecline={() => setFoodModalVisible(false)}
-                onAccept={() => {
-                    setFoodModalVisible(false);
-                    const parent = navigation.getParent();
-                    if (parent) parent.navigate('FoodDelivery');
-                    else navigation.navigate('FoodDelivery');
-                }}
+                onDecline={onFoodDecline}
+                onAccept={onFoodAccept}
             />
         </View>
     );

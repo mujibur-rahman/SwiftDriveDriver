@@ -12,7 +12,8 @@ import {
 const DriverSocketContext = createContext(null);
 
 // Android emulator → 10.0.2.2 | Physical device → your LAN IP
-const SOCKET_URL = 'http://10.0.2.2:8000';
+// const SOCKET_URL = 'http://10.0.2.2:8000';
+const SOCKET_URL = "http://192.168.0.101:8000"; // for mobile
 
 export const DriverSocketProvider = ({ children }) => {
   const socketRef = useRef(null);

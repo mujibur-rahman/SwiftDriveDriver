@@ -7,7 +7,6 @@ import AppModal from '@/components/ui/AppModal';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import StatRow from '@/components/ui/StatRow';
-import IconButton from '@/components/ui/IconButton';
 
 // ─── Static demo order ───────────────────────────────────────────────────────
 const DEMO_ORDER = {
@@ -154,12 +153,12 @@ export default function IncomingFoodDeliveryModal({ visible, onAccept, onDecline
             />
 
             {/* ── Map placeholder ── */}
-            <View className="h-36 rounded-2xl border border-border bg-background-muted items-center justify-center mb-4 overflow-hidden">
+            {/* <View className="h-36 rounded-2xl border border-border bg-background-muted items-center justify-center mb-4 overflow-hidden">
                 <Icon name="map-outline" size={40} color={primaryHex} />
                 <Text className="text-xs font-inter text-foreground-muted mt-2">
                     Map preview
                 </Text>
-            </View>
+            </View> */}
 
             {/* ── Restaurant & customer info ── */}
             <View className="gap-2.5 mb-4">

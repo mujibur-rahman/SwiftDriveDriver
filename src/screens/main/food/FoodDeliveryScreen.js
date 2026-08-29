@@ -6,56 +6,41 @@ import {
     Animated,
     Alert,
     Linking,
+    ScrollView,
+    TouchableOpacity,
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
-import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDispatch, useSelector } from 'react-redux';
+import * as ImagePicker from 'expo-image-picker';
+import { CommonActions } from '@react-navigation/native';
 import { useTheme } from '@/theme';
-import ScreenHeader from '@/components/ui/ScreenHeader';
+import {
+    setFoodOrderStatus,
+    updateTodayStats,
+} from '@/features/driver/driverSlice';
+import { useDirections } from '@/hooks/useDirections';
+import { useCompleteFoodDeliveryMutation } from '@/features/driver/driverApi';
+import { DEMO, DEMO_DRIVER } from '@/screens/main/food/foodDemo';
+import { foodStyles as styles } from '@/screens/main/food/foodStyles';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import IconButton from '@/components/ui/IconButton';
-import StatRow from '@/components/ui/StatRow';
+import FoodMapPanel from '@/components/food/FoodMapPanel';
+import FoodSheetBody from '@/components/food/FoodSheetBody';
 
-// ─── Static demo data ─────────────────────────────────────────────────────────
-const DEMO = {
-    restaurant: "Hungry Jack's",
-    restaurantAddress: '283 Crown St, Surry Hills NSW 2010',
-    // Surry Hills, Sydney
-    restaurantCoords: { latitude: -33.8842, longitude: 151.2101 },
-    customerArea: 'Redfern, NSW',
-    distance: '3.4 km',
-    duration: '12 min',
-    earnings: '$8.50',
-    items: 2,
-};
-
-// ─── Step config ──────────────────────────────────────────────────────────────
-const STEP_CONFIG = {
-    navigating: {
-        badgeLabel: 'EN ROUTE',
-        badgeVariant: 'primary',
-        title: 'Navigate to Restaurant',
-        subtitle: 'Head to the pickup location',
-        btnLabel: "I've Arrived at Restaurant",
-        btnVariant: 'primary',
-        btnIcon: 'storefront-outline',
-        borderColor: null, // resolved from theme
-    },
-    pickup: {
-        badgeLabel: 'AT RESTAURANT',
-        badgeVariant: 'warning',
-        title: 'Confirm Pickup',
-        subtitle: 'Collect the order and confirm',
-        btnLabel: 'Confirm Pickup',
-        btnVariant: 'success',
-        btnIcon: 'package-variant-closed-check',
-        borderColor: null,
-    },
-};
-
-export default function FoodDeliveryScreen({ navigation }) {
+export default function FoodDeliveryScreen({ navigation, route }) {
     const { colors, isDark } = useTheme();
-    const [step, setStep] = useState('navigating'); // 'navigating' | 'pickup'
+    const insets = useSafeAreaInsets();
+    const dispatch = useDispatch();
+    const { currentLocation, foodDeliveryEnabled, isOnline } = useSelector(
+        (s) => s.driver,
+    );
+    const [completeFood, { isLoading }] = useCompleteFoodDeliveryMutation();
+
+    const [step, setStep] = useState(
+        route?.params?.initialStep ?? 'to_restaurant',
+    );
+    const [checkedItems, setCheckedItems] = useState({});
+    const [doorPhoto, setDoorPhoto] = useState(null);
 
     const primaryHex = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
     const warningHex = isDark ? '#FBBF24' : '#D97706';
@@ -64,196 +49,337 @@ export default function FoodDeliveryScreen({ navigation }) {
     const slideAnim = useRef(new Animated.Value(300)).current;
     const mapRef = useRef(null);
 
-    // Step-specific colours
-    const stepColor = step === 'navigating' ? primaryHex : warningHex;
+    const total = DEMO.baseFare + DEMO.tip;
+    const driverCoords = currentLocation ?? DEMO_DRIVER;
+    const isNavigating = step === 'to_restaurant' || step === 'to_customer';
+
+    const destination =
+        step === 'to_restaurant'
+            ? DEMO.restaurantCoords
+            : step === 'to_customer'
+                ? DEMO.customerCoords
+                : null;
+
+    const {
+        routeCoordinates,
+        currentStep,
+        distanceText,
+        durationText,
+        isLoading: routeLoading,
+    } = useDirections(destination);
+
+    const fallbackRoute =
+        step === 'to_restaurant'
+            ? DEMO.routeToRestaurant
+            : step === 'to_customer'
+                ? DEMO.routeToCustomer
+                : null;
+    const routeCoords =
+        routeCoordinates.length > 0 ? routeCoordinates : fallbackRoute;
+    const routeTarget =
+        step === 'to_restaurant'
+            ? DEMO.restaurantCoords
+            : step === 'to_customer'
+                ? DEMO.customerCoords
+                : null;
+
+    const etaDuration =
+        durationText ||
+        (step === 'to_restaurant'
+            ? DEMO.durationToRestaurant
+            : DEMO.durationToCustomer);
+    const etaDistance =
+        distanceText ||
+        (step === 'to_restaurant'
+            ? DEMO.distanceToRestaurant
+            : DEMO.distanceToCustomer);
 
     useEffect(() => {
+        slideAnim.setValue(300);
         Animated.spring(slideAnim, {
             toValue: 0,
             useNativeDriver: true,
-            tension: 50,
+            friction: 9,
+            tension: 60,
         }).start();
+    }, [step, slideAnim]);
 
-        // Pan map to restaurant
+    useEffect(() => {
+        if (!mapRef.current || !routeCoords?.length) return;
         setTimeout(() => {
-            mapRef.current?.animateToRegion(
-                {
-                    ...DEMO.restaurantCoords,
-                    latitudeDelta: 0.012,
-                    longitudeDelta: 0.012,
-                },
-                800,
-            );
-        }, 400);
-    }, []);
+            mapRef.current?.fitToCoordinates(routeCoords, {
+                edgePadding: { top: 100, right: 60, bottom: 320, left: 60 },
+                animated: true,
+            });
+        }, 250);
+    }, [step, routeCoords]);
 
-    const handlePrimary = () => {
-        if (step === 'navigating') {
-            setStep('pickup');
-        } else if (step === 'pickup') {
-            Alert.alert(
-                'Pickup Confirmed',
-                'Order collected! Head to the customer.',
-                [{ text: 'OK', onPress: () => console.log('[Food] Pickup confirmed → next step') }],
-            );
+    const openMaps = (coords, label) => {
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${coords.latitude},${coords.longitude}&travelmode=driving`;
+        Linking.openURL(url).catch(() =>
+            Alert.alert('Maps', `Navigate to ${label}`),
+        );
+    };
+
+    const callPhone = (phone, who) => {
+        Linking.openURL(`tel:${phone}`).catch(() =>
+            Alert.alert('Call', `Calling ${who}…`),
+        );
+    };
+
+    const allItemsChecked = DEMO.items.every((it) => checkedItems[it.id]);
+    const toggleItem = (id) => {
+        setCheckedItems((prev) => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    const takeDoorPhoto = async () => {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission', 'Camera access is required for leave-at-door.');
+            return;
+        }
+        const result = await ImagePicker.launchCameraAsync({
+            quality: 0.7,
+            allowsEditing: false,
+        });
+        if (!result.canceled && result.assets?.[0]?.uri) {
+            setDoorPhoto(result.assets[0].uri);
         }
     };
 
-    const openNavigation = () => {
-        const { latitude, longitude } = DEMO.restaurantCoords;
-        const url = `google.navigation:q=${latitude},${longitude}&mode=d`;
-        const geo = `geo:${latitude},${longitude}?q=${latitude},${longitude}`;
-        Linking.canOpenURL(url)
-            .then((ok) => Linking.openURL(ok ? url : geo))
-            .catch(() =>
-                Alert.alert('Navigation unavailable', 'Please install Google Maps.'),
-            );
+    const openSummary = (summary) => {
+        navigation.dispatch(
+            CommonActions.reset({
+                index: 1,
+                routes: [
+                    { name: 'Tabs' },
+                    { name: 'FoodDeliverySummary', params: { summary } },
+                ],
+            }),
+        );
     };
 
-    const cfg = STEP_CONFIG[step];
+    const goComplete = async () => {
+        if (isLoading) return;
+        const fallbackSummary = {
+            orderNumber: DEMO.orderNumber,
+            baseFare: DEMO.baseFare,
+            tip: DEMO.tip,
+            bonus: 0,
+            total: DEMO.baseFare + DEMO.tip,
+        };
+        try {
+            const data = await completeFood({
+                orderId: DEMO.orderNumber,
+                deliveryMethod:
+                    step === 'leave_at_door' ? 'leave_at_door' : 'hand_to_customer',
+                photoUri: doorPhoto,
+            }).unwrap();
+            dispatch(setFoodOrderStatus('completed'));
+            openSummary({
+                orderNumber: data.orderId ?? DEMO.orderNumber,
+                baseFare: data.baseFare ?? DEMO.baseFare,
+                tip: data.tip ?? DEMO.tip,
+                bonus: data.bonus ?? 0,
+                total: data.total ?? DEMO.baseFare + DEMO.tip,
+            });
+        } catch (e) {
+            console.warn('[FoodDelivery] complete failed', e?.message || e);
+            dispatch(setFoodOrderStatus('completed'));
+            dispatch(updateTodayStats({ tripsDelta: 1, earningsDelta: total }));
+            openSummary(fallbackSummary);
+        }
+    };
+
+    const stepMeta = {
+        to_restaurant: {
+            title: 'Navigate to Restaurant',
+            subtitle: currentStep?.instruction || 'Head to the pickup location',
+            badge: { label: 'EN ROUTE', variant: 'primary' },
+            color: primaryHex,
+            cta: "I've Arrived at Restaurant",
+            ctaVariant: 'primary',
+            ctaIcon: 'storefront-outline',
+            onCta: () => setStep('at_restaurant'),
+        },
+        at_restaurant: {
+            title: 'Arrived at Restaurant',
+            subtitle: 'Is the order ready?',
+            badge: { label: 'AT RESTAURANT', variant: 'warning' },
+            color: warningHex,
+        },
+        waiting_order: {
+            title: 'Waiting for Order',
+            subtitle: 'Order not ready yet — wait or call',
+            badge: { label: 'WAITING', variant: 'warning' },
+            color: warningHex,
+            cta: 'Order is Ready Now',
+            ctaVariant: 'warning',
+            ctaIcon: 'check',
+            onCta: () => setStep('confirm_items'),
+        },
+        confirm_items: {
+            title: 'Confirm Items',
+            subtitle: 'Check each item before leaving',
+            badge: { label: 'PICKUP', variant: 'warning' },
+            color: warningHex,
+            cta: 'Pickup Confirmed',
+            ctaVariant: 'warning',
+            ctaIcon: 'package-variant-closed-check',
+            onCta: () => {
+                if (!allItemsChecked) {
+                    Alert.alert('Items', 'Please confirm all items first.');
+                    return;
+                }
+                setStep('to_customer');
+            },
+            ctaDisabled: !allItemsChecked,
+        },
+        to_customer: {
+            title: 'Navigate to Customer',
+            subtitle: currentStep?.instruction || 'Head to the drop-off location',
+            badge: { label: 'DELIVERING', variant: 'success' },
+            color: successHex,
+            cta: "I've Arrived at Customer",
+            ctaVariant: 'success',
+            ctaIcon: 'account-outline',
+            onCta: () => setStep('at_customer'),
+        },
+        at_customer: {
+            title: 'Arrived at Customer',
+            subtitle: 'How will you deliver?',
+            badge: { label: 'AT CUSTOMER', variant: 'success' },
+            color: successHex,
+        },
+        hand_to_customer: {
+            title: 'Hand to Customer',
+            subtitle: 'Confirm the handoff',
+            badge: { label: 'HANDOFF', variant: 'success' },
+            color: successHex,
+            cta: 'Confirm Handoff',
+            ctaVariant: 'success',
+            ctaIcon: 'handshake-outline',
+            onCta: goComplete,
+        },
+        leave_at_door: {
+            title: 'Leave at Door',
+            subtitle: 'Take a photo as proof',
+            badge: { label: 'LEAVE AT DOOR', variant: 'success' },
+            color: successHex,
+            cta: 'Confirm Delivery',
+            ctaVariant: 'success',
+            ctaIcon: 'check-circle-outline',
+            onCta: () => {
+                if (!doorPhoto) {
+                    Alert.alert('Photo required', 'Please take a photo of the drop-off.');
+                    return;
+                }
+                goComplete();
+            },
+            ctaDisabled: !doorPhoto,
+        },
+    }[step];
 
     return (
-        <View className="flex-1 bg-background">
-            {/* ── Map ── */}
-            <MapView
-                ref={mapRef}
-                style={{ flex: 1 }}
-                showsUserLocation
-                showsMyLocationButton={false}
-                initialRegion={{
-                    ...DEMO.restaurantCoords,
-                    latitudeDelta: 0.015,
-                    longitudeDelta: 0.015,
-                }}
-            >
-                {/* Restaurant marker */}
-                <Marker coordinate={DEMO.restaurantCoords} title={DEMO.restaurant}>
-                    <View
-                        style={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 22,
-                            backgroundColor: step === 'navigating'
-                                ? `${primaryHex}30`
-                                : `${warningHex}30`,
-                            borderWidth: 2,
-                            borderColor: step === 'navigating' ? primaryHex : warningHex,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <Icon
-                            name="storefront-outline"
-                            size={20}
-                            color={step === 'navigating' ? primaryHex : warningHex}
-                        />
-                    </View>
-                </Marker>
-            </MapView>
+        <View
+            style={{
+                flex: 1,
+                backgroundColor: colors?.background ?? '#060E1A',
+            }}
+        >
+            <FoodMapPanel
+                mapRef={mapRef}
+                routeCoords={routeCoords}
+                routeTarget={routeTarget}
+                driverCoords={driverCoords}
+                stepMeta={stepMeta}
+                primaryHex={primaryHex}
+                warningHex={warningHex}
+                successHex={successHex}
+                isDark={isDark}
+                isNavigating={isNavigating}
+                etaDuration={etaDuration}
+                routeLoading={routeLoading}
+                insets={insets}
+                onBack={() => navigation.goBack()}
+                onOpenMaps={() =>
+                    openMaps(
+                        routeTarget,
+                        step === 'to_restaurant' ? DEMO.restaurant : DEMO.customerName,
+                    )
+                }
+            />
 
-            {/* ── Screen header (floats over map) ── */}
-            <View className="absolute top-0 left-0 right-0">
-                <ScreenHeader
-                    title="Food Delivery"
-                    onBack={() => navigation.goBack()}
-                />
-            </View>
-
-            {/* ── Navigation FAB ── */}
-            <View className="absolute right-5" style={{ bottom: 310 }}>
-                <IconButton
-                    icon="navigation"
-                    onPress={openNavigation}
-                    size={52}
-                    iconSize={22}
-                    variant="primary"
-                />
-            </View>
-
-            {/* ── Sliding bottom panel ── */}
             <Animated.View
-                className="absolute bottom-0 left-0 right-0 rounded-t-3xl border-t border-border bg-card px-5 pb-10 pt-5 gap-4"
-                style={{
-                    transform: [{ translateY: slideAnim }],
-                    shadowColor: colors?.foreground ?? '#000',
-                    shadowOffset: { width: 0, height: -4 },
-                    shadowOpacity: isDark ? 0.4 : 0.12,
-                    elevation: 20,
-                }}
+                style={[
+                    styles.bottomSheet,
+                    {
+                        paddingBottom: insets.bottom + 16,
+                        backgroundColor: isDark ? '#0D1E32' : '#FFFFFF',
+                        borderTopColor: isDark ? '#1E3A5F' : '#BAE6FD',
+                        transform: [{ translateY: slideAnim }],
+                        maxHeight: '55%',
+                    },
+                ]}
             >
-                {/* Status header row */}
-                <View
-                    className="flex-row items-center justify-between border-l-[3px] pl-3"
-                    style={{ borderLeftColor: stepColor }}
-                >
-                    <View className="flex-1 mr-3">
-                        <Text className="text-lg font-inter-bold text-foreground">
-                            {cfg.title}
+                <View style={styles.dragHandle} />
+
+                <View style={[styles.statusRow, { borderLeftColor: stepMeta.color }]}>
+                    <View className="flex-1 pr-2">
+                        <Text
+                            style={[
+                                styles.stepTitle,
+                                { color: isDark ? '#F0F9FF' : '#0F172A' },
+                            ]}
+                        >
+                            {stepMeta.title}
                         </Text>
-                        <Text className="text-[13px] font-inter text-foreground-muted mt-0.5">
-                            {cfg.subtitle}
+                        <Text
+                            style={[
+                                styles.stepSubtitle,
+                                { color: isDark ? '#7DD3FC' : '#64748B' },
+                            ]}
+                            numberOfLines={2}
+                        >
+                            {stepMeta.subtitle}
                         </Text>
                     </View>
-                    <Badge
-                        label={cfg.badgeLabel}
-                        variant={cfg.badgeVariant}
-                        size="sm"
-                        uppercase
+                    <Badge label={stepMeta.badge.label} variant={stepMeta.badge.variant} />
+                </View>
+
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 12, paddingBottom: 4 }}
+                >
+                    <FoodSheetBody
+                        step={step}
+                        setStep={setStep}
+                        primaryHex={primaryHex}
+                        warningHex={warningHex}
+                        successHex={successHex}
+                        colors={colors}
+                        etaDistance={etaDistance}
+                        etaDuration={etaDuration}
+                        total={total}
+                        routeLoading={routeLoading}
+                        checkedItems={checkedItems}
+                        toggleItem={toggleItem}
+                        doorPhoto={doorPhoto}
+                        takeDoorPhoto={takeDoorPhoto}
+                        callPhone={callPhone}
                     />
-                </View>
+                </ScrollView>
 
-                {/* Restaurant info card */}
-                <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-background-muted px-4 py-3">
-                    <View
-                        className="h-11 w-11 items-center justify-center rounded-full"
-                        style={{
-                            backgroundColor: step === 'navigating'
-                                ? `${primaryHex}20`
-                                : `${warningHex}20`,
-                            borderWidth: 1,
-                            borderColor: step === 'navigating'
-                                ? `${primaryHex}40`
-                                : `${warningHex}40`,
-                        }}
+                {stepMeta.cta && (
+                    <Button
+                        variant={stepMeta.ctaVariant}
+                        leftIcon={stepMeta.ctaIcon}
+                        onPress={stepMeta.onCta}
+                        disabled={stepMeta.ctaDisabled || isLoading}
                     >
-                        <Icon
-                            name="storefront-outline"
-                            size={20}
-                            color={step === 'navigating' ? primaryHex : warningHex}
-                        />
-                    </View>
-
-                    <View className="flex-1">
-                        <Text className="text-base font-inter-semibold text-foreground" numberOfLines={1}>
-                            {DEMO.restaurant}
-                        </Text>
-                        <Text className="text-xs font-inter text-foreground-muted mt-0.5" numberOfLines={1}>
-                            {DEMO.restaurantAddress}
-                        </Text>
-                        <Text className="text-xs font-inter text-foreground-muted mt-0.5">
-                            {DEMO.items} item{DEMO.items !== 1 ? 's' : ''} · {DEMO.customerArea}
-                        </Text>
-                    </View>
-                </View>
-
-                {/* Stats row */}
-                <StatRow
-                    className="border border-border bg-card"
-                    items={[
-                        { label: 'Distance', value: DEMO.distance },
-                        { label: 'Est. Time', value: DEMO.duration },
-                        { label: 'Earnings', value: DEMO.earnings },
-                    ]}
-                />
-
-                {/* Primary CTA */}
-                <Button
-                    variant={cfg.btnVariant}
-                    leftIcon={cfg.btnIcon}
-                    onPress={handlePrimary}
-                >
-                    {cfg.btnLabel}
-                </Button>
+                        {isLoading ? 'Please wait…' : stepMeta.cta}
+                    </Button>
+                )}
             </Animated.View>
         </View>
     );
