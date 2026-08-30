@@ -4,11 +4,15 @@ import { directionsApi } from "@/features/directions/directionsApi";
 import authReducer from "@/features/auth/authSlice";
 import driverReducer from "@/features/driver/driverSlice";
 import earningsReducer from "@/features/earnings/earningsSlice";
+import parcelReducer from "@/features/parcel/parcelSlice";
+import gigReducer from "@/features/gig/gigSlice";
 
 // inject endpoints register করতে side-effect import
 import "@/features/auth/authApi";
 import "@/features/driver/driverApi";
 import "@/features/earnings/earningsApi";
+import "@/features/parcel/parcelApi";
+import "@/features/gig/gigApi";
 
 export const store = configureStore({
   reducer: {
@@ -17,6 +21,8 @@ export const store = configureStore({
     auth: authReducer,
     driver: driverReducer,
     earnings: earningsReducer,
+    parcel: parcelReducer,
+    gig: gigReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({ serializableCheck: false }).concat(
