@@ -1,5 +1,4 @@
 // src/screens/main/home/HomeScreen.js
-
 import { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { View, Text, StatusBar, ScrollView } from 'react-native';
@@ -8,10 +7,8 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useDriverSocket } from '@/services/DriverSocketContext';
 import { useUpdateDriverStatusMutation } from '@/features/driver/driverApi';
-import {
-    setOnlineStatus,
-    setFoodOrderStatus,
-} from '@/features/driver/driverSlice';
+import { setOnlineStatus } from '@/features/driver/driverSlice';
+import { setFoodOrderStatus } from '@/features/food/foodSlice';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { DARK_MAP_STYLE } from '@/utils/mapStyles';
@@ -48,10 +45,8 @@ export default function HomeScreen() {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
     const mapRef = useRef(null);
-
     const primaryHex = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
     const warningHex = isDark ? '#FBBF24' : '#D97706';
-
     const [foodModalVisible, setFoodModalVisible] = useState(false);
 
     useEffect(() => {
@@ -126,7 +121,6 @@ export default function HomeScreen() {
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-            {/* Incoming food modal → map backdrop */}
             {foodModalVisible && (
                 <MapView
                     ref={mapRef}
@@ -171,7 +165,6 @@ export default function HomeScreen() {
                 </MapView>
             )}
 
-            {/* Normal home */}
             {!foodModalVisible && (
                 <>
                     <ScrollView
@@ -182,15 +175,13 @@ export default function HomeScreen() {
                         }}
                         showsVerticalScrollIndicator={false}
                     >
-                        <LogoAvatar size={40} className='mb-1' />
-
+                        <LogoAvatar size={40} className="mb-1" />
                         <OnlineStatus
                             name={driver?.name}
                             isOnline={isOnline}
                             onToggleOnline={toggleOnline}
                             absolute={false}
                         />
-
                         {!isOnline && (
                             <OnlineWaiting
                                 isOnline={false}
@@ -199,7 +190,6 @@ export default function HomeScreen() {
                                 className="mb-4 mt-3"
                             />
                         )}
-
                         {isOnline && (
                             <View className="mt-3 mb-3 gap-3">
                                 <OnlineWaiting
@@ -207,7 +197,6 @@ export default function HomeScreen() {
                                     onlineMessage="Waiting for requests..."
                                     showPulse={true}
                                 />
-
                                 <View className="gap-2">
                                     <Button
                                         variant="primary"
@@ -232,7 +221,6 @@ export default function HomeScreen() {
                                 </View>
                             </View>
                         )}
-
                         <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-4 mb-4">
                             <Text className="text-xs font-inter-semibold text-foreground-muted mb-3 uppercase tracking-widest">
                                 Advertisement
@@ -247,7 +235,6 @@ export default function HomeScreen() {
                             </View>
                         </View>
                     </ScrollView>
-
                     <View
                         className="service-grid mx-4"
                         style={{ marginBottom: insets.bottom + 90 }}

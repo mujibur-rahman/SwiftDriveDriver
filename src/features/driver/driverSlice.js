@@ -2,22 +2,15 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 /**
- * Local + socket-driven UI state only.
- * Server ride data is owned by RTK Query (getActiveRide + mutations).
- * This slice stays for:
- *  - socket pushes (incomingRide, location)
- *  - optimistic online flag
- *  - food delivery preference + order status
- *  - screen flow flags (rideStatus) shared with sockets
+ * Shared driver UI + socket state.
+ * Food / parcel / gig flow state lives in features/food|parcel|gig.
  */
 const initialState = {
   isOnline: false,
-  foodDeliveryEnabled: false,
   currentLocation: null,
   incomingRide: null,
   activeRide: null,
   rideStatus: "idle", // idle | incoming | accepted | arrived | ongoing | completed
-  foodOrderStatus: "idle", // idle | searching | incoming | active | completed
   passenger: null,
   error: null,
   todayStats: { trips: 0, earnings: 0, hours: 0 },
@@ -29,23 +22,6 @@ const driverSlice = createSlice({
   reducers: {
     setOnlineStatus: (state, action) => {
       state.isOnline = action.payload;
-      if (!action.payload) {
-        state.foodDeliveryEnabled = false;
-        if (state.foodOrderStatus === "searching") {
-          state.foodOrderStatus = "idle";
-        }
-      }
-    },
-    setFoodDeliveryEnabled: (state, action) => {
-      state.foodDeliveryEnabled = action.payload;
-      if (action.payload && state.isOnline) {
-        state.foodOrderStatus = "searching";
-      } else if (!action.payload && state.foodOrderStatus === "searching") {
-        state.foodOrderStatus = "idle";
-      }
-    },
-    setFoodOrderStatus: (state, action) => {
-      state.foodOrderStatus = action.payload;
     },
     setCurrentLocation: (state, action) => {
       state.currentLocation = action.payload;
@@ -80,16 +56,12 @@ const driverSlice = createSlice({
       state.passenger = null;
       state.rideStatus = "idle";
       state.incomingRide = null;
-      state.foodOrderStatus =
-        state.isOnline && state.foodDeliveryEnabled ? "searching" : "idle";
     },
     clearActiveRide: (state) => {
       state.activeRide = null;
       state.passenger = null;
       state.rideStatus = "idle";
       state.incomingRide = null;
-      state.foodOrderStatus =
-        state.isOnline && state.foodDeliveryEnabled ? "searching" : "idle";
     },
     setDriverError: (state, action) => {
       state.error = action.payload;
@@ -99,8 +71,6 @@ const driverSlice = createSlice({
 
 export const {
   setOnlineStatus,
-  setFoodDeliveryEnabled,
-  setFoodOrderStatus,
   setCurrentLocation,
   setIncomingRide,
   clearIncomingRide,
@@ -119,5 +89,3 @@ export const selectDriverUi = (s) => s.driver;
 export const selectRideStatus = (s) => s.driver.rideStatus;
 export const selectIncomingRide = (s) => s.driver.incomingRide;
 export const selectActiveRideLocal = (s) => s.driver.activeRide;
-export const selectFoodDeliveryEnabled = (s) => s.driver.foodDeliveryEnabled;
-export const selectFoodOrderStatus = (s) => s.driver.foodOrderStatus;

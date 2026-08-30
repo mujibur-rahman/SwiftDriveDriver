@@ -14,12 +14,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import * as ImagePicker from 'expo-image-picker';
 import { CommonActions } from '@react-navigation/native';
 import { useTheme } from '@/theme';
-import {
-    setFoodOrderStatus,
-    updateTodayStats,
-} from '@/features/driver/driverSlice';
+import { updateTodayStats } from '@/features/driver/driverSlice';
+import { setFoodOrderStatus } from '@/features/food/foodSlice';
+import { useCompleteFoodDeliveryMutation } from '@/features/food/foodApi';
 import { useDirections } from '@/hooks/useDirections';
-import { useCompleteFoodDeliveryMutation } from '@/features/driver/driverApi';
 import { DEMO, DEMO_DRIVER } from '@/screens/main/food/foodDemo';
 import { foodStyles as styles } from '@/screens/main/food/foodStyles';
 import Button from '@/components/ui/Button';
@@ -31,9 +29,9 @@ export default function FoodDeliveryScreen({ navigation, route }) {
     const { colors, isDark } = useTheme();
     const insets = useSafeAreaInsets();
     const dispatch = useDispatch();
-    const { currentLocation, foodDeliveryEnabled, isOnline } = useSelector(
-        (s) => s.driver,
-    );
+    const currentLocation = useSelector((s) => s.driver.currentLocation);
+    const isOnline = useSelector((s) => s.driver.isOnline);
+    const foodDeliveryEnabled = useSelector((s) => s.food.enabled);
     const [completeFood, { isLoading }] = useCompleteFoodDeliveryMutation();
 
     const [step, setStep] = useState(
@@ -159,36 +157,31 @@ export default function FoodDeliveryScreen({ navigation, route }) {
         );
     };
 
-    const goComplete = async () => {
-        if (isLoading) return;
-        const fallbackSummary = {
+    // Optimistic: summary opens immediately (no network wait)
+    const goComplete = () => {
+        const method =
+            step === 'leave_at_door' ? 'leave_at_door' : 'hand_to_customer';
+        const summary = {
             orderNumber: DEMO.orderNumber,
             baseFare: DEMO.baseFare,
             tip: DEMO.tip,
             bonus: 0,
             total: DEMO.baseFare + DEMO.tip,
         };
-        try {
-            const data = await completeFood({
-                orderId: DEMO.orderNumber,
-                deliveryMethod:
-                    step === 'leave_at_door' ? 'leave_at_door' : 'hand_to_customer',
-                photoUri: doorPhoto,
-            }).unwrap();
-            dispatch(setFoodOrderStatus('completed'));
-            openSummary({
-                orderNumber: data.orderId ?? DEMO.orderNumber,
-                baseFare: data.baseFare ?? DEMO.baseFare,
-                tip: data.tip ?? DEMO.tip,
-                bonus: data.bonus ?? 0,
-                total: data.total ?? DEMO.baseFare + DEMO.tip,
+
+        dispatch(setFoodOrderStatus('completed'));
+        dispatch(updateTodayStats({ tripsDelta: 1, earningsDelta: total }));
+        openSummary(summary);
+
+        completeFood({
+            orderId: DEMO.orderNumber,
+            deliveryMethod: method,
+            photoUri: doorPhoto,
+        })
+            .unwrap()
+            .catch((e) => {
+                console.warn('[FoodDelivery] complete API failed', e?.message || e);
             });
-        } catch (e) {
-            console.warn('[FoodDelivery] complete failed', e?.message || e);
-            dispatch(setFoodOrderStatus('completed'));
-            dispatch(updateTodayStats({ tripsDelta: 1, earningsDelta: total }));
-            openSummary(fallbackSummary);
-        }
     };
 
     const stepMeta = {

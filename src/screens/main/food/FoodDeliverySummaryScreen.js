@@ -3,8 +3,8 @@ import { View, Text, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import Button from '@/components/ui/Button';
 import { useGetEarningsQuery } from '@/features/earnings/earningsApi';
+import Button from '@/components/ui/Button';
 
 export default function FoodDeliverySummaryScreen({ navigation, route }) {
     const insets = useSafeAreaInsets();
@@ -19,7 +19,10 @@ export default function FoodDeliverySummaryScreen({ navigation, route }) {
         total: 0,
     };
 
-    const { data: earnings } = useGetEarningsQuery({ period: 'today' });
+    const { data: earnings } = useGetEarningsQuery(
+        { period: 'today' },
+        { refetchOnMountOrArgChange: false },
+    );
     const todayTotal = earnings?.summary?.totalBalance;
 
     const rows = [
@@ -94,7 +97,7 @@ export default function FoodDeliverySummaryScreen({ navigation, route }) {
             <View className="px-5 gap-2">
                 <Button
                     variant="primary"
-                    leftIcon="magnify"
+                    leftIcon="wifi"
                     onPress={() => {
                         navigation.reset({
                             index: 0,
@@ -102,7 +105,7 @@ export default function FoodDeliverySummaryScreen({ navigation, route }) {
                         });
                     }}
                 >
-                    Search Again
+                    Go Online again
                 </Button>
                 <Button
                     variant="outline"
