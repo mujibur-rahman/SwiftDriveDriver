@@ -17,7 +17,8 @@
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "VIBRATE"
+        "VIBRATE",
+        "CAMERA"
       ],
       "config": {
         "googleMaps": {
@@ -37,7 +38,13 @@
       ],
       "expo-font",
       "expo-asset",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "SwiftDrive Driver needs camera access to scan parcel barcodes at pickup."
+        }
+      ]
     ]
   }
 }

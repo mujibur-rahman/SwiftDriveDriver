@@ -1,4 +1,11 @@
-// src/screens/main/food/FoodDeliverySummaryScreen.js
+// src/screens/main/DeliverySummaryScreen.js
+//
+// Shared "delivery complete" screen for every on-demand delivery flow
+// (food, parcel, and any future ones — gig, etc.). Previously lived at
+// src/screens/main/food/FoodDeliverySummaryScreen.js under a food-specific
+// name even though nothing in it was food-specific. Moved to a common
+// location and renamed so the intent is honest: one summary screen, one
+// route ("DeliverySummary"), reused by every delivery type.
 import { View, Text, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
@@ -6,7 +13,7 @@ import { useTheme } from '@/theme';
 import { useGetEarningsQuery } from '@/features/earnings/earningsApi';
 import Button from '@/components/ui/Button';
 
-export default function FoodDeliverySummaryScreen({ navigation, route }) {
+export default function DeliverySummaryScreen({ navigation, route }) {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
     const successHex = isDark ? '#34D399' : '#16A34A';

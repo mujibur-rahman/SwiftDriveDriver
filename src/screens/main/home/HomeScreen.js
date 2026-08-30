@@ -9,6 +9,7 @@ import { useDriverSocket } from '@/services/DriverSocketContext';
 import { useUpdateDriverStatusMutation } from '@/features/driver/driverApi';
 import { setOnlineStatus } from '@/features/driver/driverSlice';
 import { setFoodOrderStatus } from '@/features/food/foodSlice';
+import { setParcelOrderStatus } from '@/features/parcel/parcelSlice';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { DARK_MAP_STYLE } from '@/utils/mapStyles';
@@ -18,8 +19,10 @@ import OnlineStatus from '@/components/OnlineStatus';
 import OnlineWaiting from '@/components/OnlineWaiting';
 import Button from '@/components/ui/Button';
 import IncomingFoodDeliveryModal from '@/components/food/IncomingFoodDeliveryModal';
+import IncomingParcelDeliveryModal from '@/components/parcel/IncomingParcelDeliveryModal';
 
 const DEMO_RESTAURANT_COORDS = { latitude: -33.8842, longitude: 151.2101 };
+const DEMO_SENDER_COORDS = { latitude: -33.907, longitude: 151.189 };
 const DEMO_DRIVER = { latitude: -33.876, longitude: 151.203 };
 
 const JOBS = [
@@ -48,6 +51,8 @@ export default function HomeScreen() {
     const primaryHex = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
     const warningHex = isDark ? '#FBBF24' : '#D97706';
     const [foodModalVisible, setFoodModalVisible] = useState(false);
+    const [parcelModalVisible, setParcelModalVisible] = useState(false);
+    const anyDeliveryModalVisible = foodModalVisible || parcelModalVisible;
 
     useEffect(() => {
         if (incomingRide && rideStatus === 'incoming') {
@@ -58,17 +63,17 @@ export default function HomeScreen() {
     }, [incomingRide, rideStatus, navigation]);
 
     useEffect(() => {
-        if (!foodModalVisible || !mapRef.current) return;
+        if (!anyDeliveryModalVisible || !mapRef.current) return;
         const driverPos = currentLocation ?? DEMO_DRIVER;
-        const rest = DEMO_RESTAURANT_COORDS;
-        const midLat = (driverPos.latitude + rest.latitude) / 2;
-        const midLng = (driverPos.longitude + rest.longitude) / 2;
+        const pickup = foodModalVisible ? DEMO_RESTAURANT_COORDS : DEMO_SENDER_COORDS;
+        const midLat = (driverPos.latitude + pickup.latitude) / 2;
+        const midLng = (driverPos.longitude + pickup.longitude) / 2;
         const deltaLat = Math.max(
-            Math.abs(driverPos.latitude - rest.latitude) * 1.6,
+            Math.abs(driverPos.latitude - pickup.latitude) * 1.6,
             0.018,
         );
         const deltaLng = Math.max(
-            Math.abs(driverPos.longitude - rest.longitude) * 1.6,
+            Math.abs(driverPos.longitude - pickup.longitude) * 1.6,
             0.018,
         );
         setTimeout(() => {
@@ -82,7 +87,7 @@ export default function HomeScreen() {
                 600,
             );
         }, 300);
-    }, [foodModalVisible, currentLocation]);
+    }, [anyDeliveryModalVisible, foodModalVisible, currentLocation]);
 
     const toggleOnline = async (val) => {
         dispatch(setOnlineStatus(val));
@@ -117,11 +122,29 @@ export default function HomeScreen() {
         else navigation.navigate('FoodDelivery');
     };
 
+    const openParcelModal = () => {
+        dispatch(setParcelOrderStatus('incoming'));
+        setParcelModalVisible(true);
+    };
+
+    const onParcelDecline = () => {
+        setParcelModalVisible(false);
+        dispatch(setParcelOrderStatus('idle'));
+    };
+
+    const onParcelAccept = () => {
+        setParcelModalVisible(false);
+        dispatch(setParcelOrderStatus('active'));
+        const parent = navigation.getParent();
+        if (parent) parent.navigate('ParcelDelivery');
+        else navigation.navigate('ParcelDelivery');
+    };
+
     return (
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-            {foodModalVisible && (
+            {anyDeliveryModalVisible && (
                 <MapView
                     ref={mapRef}
                     style={{ flex: 1 }}
@@ -129,14 +152,14 @@ export default function HomeScreen() {
                     showsUserLocation
                     showsMyLocationButton={false}
                     initialRegion={{
-                        ...DEMO_RESTAURANT_COORDS,
+                        ...(foodModalVisible ? DEMO_RESTAURANT_COORDS : DEMO_SENDER_COORDS),
                         latitudeDelta: 0.028,
                         longitudeDelta: 0.028,
                     }}
                 >
                     <Marker
-                        coordinate={DEMO_RESTAURANT_COORDS}
-                        title="Hungry Jack's"
+                        coordinate={foodModalVisible ? DEMO_RESTAURANT_COORDS : DEMO_SENDER_COORDS}
+                        title={foodModalVisible ? "Hungry Jack's" : 'QuickShip Warehouse'}
                         description="Pickup location"
                     >
                         <View
@@ -151,12 +174,19 @@ export default function HomeScreen() {
                                 justifyContent: 'center',
                             }}
                         >
-                            <Icon name="storefront-outline" size={22} color={warningHex} />
+                            <Icon
+                                name={foodModalVisible ? 'storefront-outline' : 'package-variant-closed'}
+                                size={22}
+                                color={warningHex}
+                            />
                         </View>
                     </Marker>
                     {currentLocation && (
                         <Polyline
-                            coordinates={[currentLocation, DEMO_RESTAURANT_COORDS]}
+                            coordinates={[
+                                currentLocation,
+                                foodModalVisible ? DEMO_RESTAURANT_COORDS : DEMO_SENDER_COORDS,
+                            ]}
                             strokeColor={primaryHex}
                             strokeWidth={3}
                             lineDashPattern={[8, 4]}
@@ -165,7 +195,7 @@ export default function HomeScreen() {
                 </MapView>
             )}
 
-            {!foodModalVisible && (
+            {!anyDeliveryModalVisible && (
                 <>
                     <ScrollView
                         className="flex-1"
@@ -218,6 +248,14 @@ export default function HomeScreen() {
                                     >
                                         You have 1 Food Delivery Request — View Now
                                     </Button>
+                                    <Button
+                                        variant="success"
+                                        size="sm"
+                                        leftIcon="package-variant-closed"
+                                        onPress={openParcelModal}
+                                    >
+                                        You have 1 Parcel Delivery Request — View Now
+                                    </Button>
                                 </View>
                             </View>
                         )}
@@ -250,6 +288,11 @@ export default function HomeScreen() {
                 visible={foodModalVisible}
                 onDecline={onFoodDecline}
                 onAccept={onFoodAccept}
+            />
+            <IncomingParcelDeliveryModal
+                visible={parcelModalVisible}
+                onDecline={onParcelDecline}
+                onAccept={onParcelAccept}
             />
         </View>
     );

@@ -41,6 +41,10 @@ const ServiceCard = ({ job, onPress, iconSize = 28, className = "" }) => {
     if (job?.id === "2" || job?.title === "Food delivery") {
       navigation.navigate("FoodDelivery");
     }
+
+    if (job?.id === "4" || job?.title === "Parcel delivery") {
+      navigation.navigate("ParcelDelivery");
+    }
   };
 
   return (

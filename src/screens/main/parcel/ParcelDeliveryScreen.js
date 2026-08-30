@@ -1,43 +1,40 @@
-// src/screens/main/food/FoodDeliveryScreen.js
+// src/screens/main/parcel/ParcelDeliveryScreen.js
 import React, { useEffect, useRef, useState } from 'react';
-import {
-    View,
-    Text,
-    Animated,
-    Alert,
-    Linking,
-    ScrollView,
-    TouchableOpacity,
-} from 'react-native';
+import { View, Text, Animated, Alert, Linking, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import * as ImagePicker from 'expo-image-picker';
 import { CommonActions } from '@react-navigation/native';
 import { useTheme } from '@/theme';
-import { setFoodOrderStatus } from '@/features/food/foodSlice';
-import { useCompleteFoodDeliveryMutation } from '@/features/food/foodApi';
+import { setParcelOrderStatus } from '@/features/parcel/parcelSlice';
+import {
+    useScanParcelMutation,
+    useCompleteParcelDeliveryMutation,
+} from '@/features/parcel/parcelApi';
 import { useDirections } from '@/hooks/useDirections';
-import { DEMO, DEMO_DRIVER } from '@/screens/main/food/foodDemo';
+import { DEMO, DEMO_DRIVER } from '@/screens/main/parcel/parcelDemo';
+// Reused as-is — generic map/sheet chrome, nothing food-specific.
 import { foodStyles as styles } from '@/screens/main/food/foodStyles';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import FoodMapPanel from '@/components/food/FoodMapPanel';
-import FoodSheetBody from '@/components/food/FoodSheetBody';
+import ParcelMapPanel from '@/components/parcel/ParcelMapPanel';
+import ParcelSheetBody from '@/components/parcel/ParcelSheetBody';
 
-export default function FoodDeliveryScreen({ navigation, route }) {
+export default function ParcelDeliveryScreen({ navigation, route }) {
     const { colors, isDark } = useTheme();
     const insets = useSafeAreaInsets();
     const dispatch = useDispatch();
     const currentLocation = useSelector((s) => s.driver.currentLocation);
-    const isOnline = useSelector((s) => s.driver.isOnline);
-    const foodDeliveryEnabled = useSelector((s) => s.food.enabled);
-    const [completeFood, { isLoading }] = useCompleteFoodDeliveryMutation();
 
-    const [step, setStep] = useState(
-        route?.params?.initialStep ?? 'to_restaurant',
-    );
-    const [checkedItems, setCheckedItems] = useState({});
-    const [doorPhoto, setDoorPhoto] = useState(null);
+    const [scanParcel] = useScanParcelMutation();
+    const [completeParcel, { isLoading }] = useCompleteParcelDeliveryMutation();
+
+    const [step, setStep] = useState(route?.params?.initialStep ?? 'to_pickup');
+    const [scannedIds, setScannedIds] = useState([]);
+    const [isSigned, setIsSigned] = useState(false);
+    const [neighborPhoto, setNeighborPhoto] = useState(null);
+    const [neighborNote, setNeighborNote] = useState('');
+    const signatureRef = useRef(null);
 
     const primaryHex = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
     const warningHex = isDark ? '#FBBF24' : '#D97706';
@@ -46,15 +43,16 @@ export default function FoodDeliveryScreen({ navigation, route }) {
     const slideAnim = useRef(new Animated.Value(300)).current;
     const mapRef = useRef(null);
 
-    const total = DEMO.baseFare + DEMO.tip;
+    const total = DEMO.baseFare + DEMO.perParcelBonus * DEMO.parcels.length;
     const driverCoords = currentLocation ?? DEMO_DRIVER;
-    const isNavigating = step === 'to_restaurant' || step === 'to_customer';
+    const isNavigating = step === 'to_pickup' || step === 'to_dropoff';
+    const allParcelsScanned = scannedIds.length === DEMO.parcels.length;
 
     const destination =
-        step === 'to_restaurant'
-            ? DEMO.restaurantCoords
-            : step === 'to_customer'
-                ? DEMO.customerCoords
+        step === 'to_pickup'
+            ? DEMO.senderCoords
+            : step === 'to_dropoff'
+                ? DEMO.recipientCoords
                 : null;
 
     const {
@@ -66,30 +64,26 @@ export default function FoodDeliveryScreen({ navigation, route }) {
     } = useDirections(destination);
 
     const fallbackRoute =
-        step === 'to_restaurant'
-            ? DEMO.routeToRestaurant
-            : step === 'to_customer'
-                ? DEMO.routeToCustomer
+        step === 'to_pickup'
+            ? DEMO.routeToPickup
+            : step === 'to_dropoff'
+                ? DEMO.routeToDropoff
                 : null;
     const routeCoords =
         routeCoordinates.length > 0 ? routeCoordinates : fallbackRoute;
     const routeTarget =
-        step === 'to_restaurant'
-            ? DEMO.restaurantCoords
-            : step === 'to_customer'
-                ? DEMO.customerCoords
+        step === 'to_pickup'
+            ? DEMO.senderCoords
+            : step === 'to_dropoff'
+                ? DEMO.recipientCoords
                 : null;
 
     const etaDuration =
         durationText ||
-        (step === 'to_restaurant'
-            ? DEMO.durationToRestaurant
-            : DEMO.durationToCustomer);
+        (step === 'to_pickup' ? DEMO.durationToPickup : DEMO.durationToDropoff);
     const etaDistance =
         distanceText ||
-        (step === 'to_restaurant'
-            ? DEMO.distanceToRestaurant
-            : DEMO.distanceToCustomer);
+        (step === 'to_pickup' ? DEMO.distanceToPickup : DEMO.distanceToDropoff);
 
     useEffect(() => {
         slideAnim.setValue(300);
@@ -124,15 +118,20 @@ export default function FoodDeliveryScreen({ navigation, route }) {
         );
     };
 
-    const allItemsChecked = DEMO.items.every((it) => checkedItems[it.id]);
-    const toggleItem = (id) => {
-        setCheckedItems((prev) => ({ ...prev, [id]: !prev[id] }));
+    // Optimistic: mark scanned locally right away, sync to backend in background
+    const handleScanParcel = (parcelId) => {
+        setScannedIds((prev) => (prev.includes(parcelId) ? prev : [...prev, parcelId]));
+        scanParcel({ orderId: DEMO.orderNumber, parcelId })
+            .unwrap()
+            .catch((e) => {
+                console.warn('[Parcel] scan API failed', e?.message || e);
+            });
     };
 
-    const takeDoorPhoto = async () => {
+    const takeNeighborPhoto = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert('Permission', 'Camera access is required for leave-at-door.');
+            Alert.alert('Permission', 'Camera access is required for this step.');
             return;
         }
         const result = await ImagePicker.launchCameraAsync({
@@ -140,7 +139,7 @@ export default function FoodDeliveryScreen({ navigation, route }) {
             allowsEditing: false,
         });
         if (!result.canceled && result.assets?.[0]?.uri) {
-            setDoorPhoto(result.assets[0].uri);
+            setNeighborPhoto(result.assets[0].uri);
         }
     };
 
@@ -158,119 +157,103 @@ export default function FoodDeliveryScreen({ navigation, route }) {
 
     // Optimistic: summary opens immediately (no network wait). Today's
     // earnings are bumped ONLY from the mutation's onQueryStarted (see
-    // foodApi.js) — not here — so a slow/failed request can't double-count
-    // against the same delivery.
+    // parcelApi.js) — not here — so a slow/failed request can't
+    // double-count against the same delivery.
     const goComplete = () => {
         const method =
-            step === 'leave_at_door' ? 'leave_at_door' : 'hand_to_customer';
+            step === 'leave_with_neighbor' ? 'leave_with_neighbor' : 'signature';
         const summary = {
             orderNumber: DEMO.orderNumber,
             baseFare: DEMO.baseFare,
-            tip: DEMO.tip,
-            bonus: 0,
-            total: DEMO.baseFare + DEMO.tip,
+            tip: 0,
+            bonus: DEMO.perParcelBonus * DEMO.parcels.length,
+            total,
         };
 
-        dispatch(setFoodOrderStatus('completed'));
+        dispatch(setParcelOrderStatus('completed'));
         openSummary(summary);
 
-        completeFood({
+        completeParcel({
             orderId: DEMO.orderNumber,
             deliveryMethod: method,
-            photoUri: doorPhoto,
+            photoUri: neighborPhoto,
+            signatureData: isSigned ? signatureRef.current?.getPaths() : null,
         })
             .unwrap()
             .catch((e) => {
-                console.warn('[FoodDelivery] complete API failed', e?.message || e);
+                console.warn('[Parcel] complete API failed', e?.message || e);
             });
     };
 
     const stepMeta = {
-        to_restaurant: {
-            title: 'Navigate to Restaurant',
-            subtitle: currentStep?.instruction || 'Head to the pickup location',
+        to_pickup: {
+            title: 'Navigate to Pickup',
+            subtitle: currentStep?.instruction || 'Head to the sender location',
             badge: { label: 'EN ROUTE', variant: 'primary' },
             color: primaryHex,
-            cta: "I've Arrived at Restaurant",
+            cta: "I've Arrived at Pickup",
             ctaVariant: 'primary',
-            ctaIcon: 'storefront-outline',
-            onCta: () => setStep('at_restaurant'),
+            ctaIcon: 'package-variant-closed',
+            onCta: () => setStep('at_pickup'),
         },
-        at_restaurant: {
-            title: 'Arrived at Restaurant',
-            subtitle: 'Is the order ready?',
-            badge: { label: 'AT RESTAURANT', variant: 'warning' },
+        at_pickup: {
+            title: 'Arrived at Pickup',
+            subtitle: 'Ready to scan the parcels?',
+            badge: { label: 'AT PICKUP', variant: 'warning' },
             color: warningHex,
-        },
-        waiting_order: {
-            title: 'Waiting for Order',
-            subtitle: 'Order not ready yet — wait or call',
-            badge: { label: 'WAITING', variant: 'warning' },
-            color: warningHex,
-            cta: 'Order is Ready Now',
+            cta: 'Start Scanning',
             ctaVariant: 'warning',
-            ctaIcon: 'check',
-            onCta: () => setStep('confirm_items'),
+            ctaIcon: 'barcode-scan',
+            onCta: () => setStep('scanning'),
         },
-        confirm_items: {
-            title: 'Confirm Items',
-            subtitle: 'Check each item before leaving',
-            badge: { label: 'PICKUP', variant: 'warning' },
+        scanning: {
+            title: 'Scan Parcels',
+            subtitle: `${scannedIds.length} of ${DEMO.parcels.length} scanned`,
+            badge: { label: 'SCANNING', variant: 'warning' },
             color: warningHex,
-            cta: 'Pickup Confirmed',
+            cta: 'Confirm Pickup',
             ctaVariant: 'warning',
             ctaIcon: 'package-variant-closed-check',
-            onCta: () => {
-                if (!allItemsChecked) {
-                    Alert.alert('Items', 'Please confirm all items first.');
-                    return;
-                }
-                setStep('to_customer');
-            },
-            ctaDisabled: !allItemsChecked,
+            onCta: () => setStep('to_dropoff'),
+            ctaDisabled: !allParcelsScanned,
         },
-        to_customer: {
-            title: 'Navigate to Customer',
-            subtitle: currentStep?.instruction || 'Head to the drop-off location',
+        to_dropoff: {
+            title: 'Navigate to Drop-off',
+            subtitle: currentStep?.instruction || 'Head to the recipient location',
             badge: { label: 'DELIVERING', variant: 'success' },
             color: successHex,
-            cta: "I've Arrived at Customer",
+            cta: "I've Arrived at Drop-off",
             ctaVariant: 'success',
             ctaIcon: 'account-outline',
-            onCta: () => setStep('at_customer'),
+            onCta: () => setStep('at_dropoff'),
         },
-        at_customer: {
-            title: 'Arrived at Customer',
-            subtitle: 'How will you deliver?',
-            badge: { label: 'AT CUSTOMER', variant: 'success' },
+        at_dropoff: {
+            title: 'Arrived at Drop-off',
+            subtitle: 'How will you confirm delivery?',
+            badge: { label: 'AT DROP-OFF', variant: 'success' },
             color: successHex,
         },
-        hand_to_customer: {
-            title: 'Hand to Customer',
-            subtitle: 'Confirm the handoff',
-            badge: { label: 'HANDOFF', variant: 'success' },
-            color: successHex,
-            cta: 'Confirm Handoff',
-            ctaVariant: 'success',
-            ctaIcon: 'handshake-outline',
-            onCta: goComplete,
-        },
-        leave_at_door: {
-            title: 'Leave at Door',
-            subtitle: 'Take a photo as proof',
-            badge: { label: 'LEAVE AT DOOR', variant: 'success' },
+        signature_capture: {
+            title: 'Signature Capture',
+            subtitle: 'Confirm once the recipient has signed',
+            badge: { label: 'SIGNATURE', variant: 'success' },
             color: successHex,
             cta: 'Confirm Delivery',
             ctaVariant: 'success',
             ctaIcon: 'check-circle-outline',
-            onCta: () => {
-                if (!doorPhoto) {
-                    Alert.alert('Photo required', 'Please take a photo of the drop-off.');
-                    return;
-                }
-                goComplete();
-            },
-            ctaDisabled: !doorPhoto,
+            onCta: goComplete,
+            ctaDisabled: !isSigned,
+        },
+        leave_with_neighbor: {
+            title: 'Leave with Neighbor',
+            subtitle: 'Take a photo as proof',
+            badge: { label: 'LEFT WITH NEIGHBOR', variant: 'success' },
+            color: successHex,
+            cta: 'Confirm Delivery',
+            ctaVariant: 'success',
+            ctaIcon: 'check-circle-outline',
+            onCta: goComplete,
+            ctaDisabled: !neighborPhoto,
         },
     }[step];
 
@@ -281,7 +264,7 @@ export default function FoodDeliveryScreen({ navigation, route }) {
                 backgroundColor: colors?.background ?? '#060E1A',
             }}
         >
-            <FoodMapPanel
+            <ParcelMapPanel
                 mapRef={mapRef}
                 routeCoords={routeCoords}
                 routeTarget={routeTarget}
@@ -299,7 +282,7 @@ export default function FoodDeliveryScreen({ navigation, route }) {
                 onOpenMaps={() =>
                     openMaps(
                         routeTarget,
-                        step === 'to_restaurant' ? DEMO.restaurant : DEMO.customerName,
+                        step === 'to_pickup' ? DEMO.sender : DEMO.recipientName,
                     )
                 }
             />
@@ -345,21 +328,26 @@ export default function FoodDeliveryScreen({ navigation, route }) {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ gap: 12, paddingBottom: 4 }}
                 >
-                    <FoodSheetBody
+                    <ParcelSheetBody
                         step={step}
                         setStep={setStep}
                         primaryHex={primaryHex}
                         warningHex={warningHex}
                         successHex={successHex}
                         colors={colors}
+                        isDark={isDark}
                         etaDistance={etaDistance}
                         etaDuration={etaDuration}
                         total={total}
                         routeLoading={routeLoading}
-                        checkedItems={checkedItems}
-                        toggleItem={toggleItem}
-                        doorPhoto={doorPhoto}
-                        takeDoorPhoto={takeDoorPhoto}
+                        scannedIds={scannedIds}
+                        onScanParcel={handleScanParcel}
+                        signatureRef={signatureRef}
+                        onSignatureChange={setIsSigned}
+                        neighborPhoto={neighborPhoto}
+                        takeNeighborPhoto={takeNeighborPhoto}
+                        neighborNote={neighborNote}
+                        setNeighborNote={setNeighborNote}
                         callPhone={callPhone}
                     />
                 </ScrollView>
