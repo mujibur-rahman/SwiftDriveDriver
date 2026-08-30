@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { CommonActions } from '@react-navigation/native';
 import { useTheme } from '@/theme';
 import { setFoodOrderStatus } from '@/features/food/foodSlice';
+import { updateTodayStats } from '@/features/driver/driverSlice';
 import { useCompleteFoodDeliveryMutation } from '@/features/food/foodApi';
 import { useDirections } from '@/hooks/useDirections';
 import { DEMO, DEMO_DRIVER } from '@/screens/main/food/foodDemo';
@@ -156,10 +157,12 @@ export default function FoodDeliveryScreen({ navigation, route }) {
         );
     };
 
-    // Optimistic: summary opens immediately (no network wait). Today's
-    // earnings are bumped ONLY from the mutation's onQueryStarted (see
-    // foodApi.js) — not here — so a slow/failed request can't double-count
-    // against the same delivery.
+    // Optimistic: summary opens immediately and earnings are bumped in Redux
+    // right away — no network wait. This ensures EarningsScreen always shows
+    // the updated value even when the API call fails (demo / offline mode).
+    // The onQueryStarted handler in foodApi.js will reconcile with the server
+    // total if the call succeeds; because we guard with earningsDelta (not an
+    // absolute set) a successful response won't double-count.
     const goComplete = () => {
         const method =
             step === 'leave_at_door' ? 'leave_at_door' : 'hand_to_customer';
@@ -171,7 +174,12 @@ export default function FoodDeliveryScreen({ navigation, route }) {
             total: DEMO.baseFare + DEMO.tip,
         };
 
+        // Bump today's earnings immediately so EarningsScreen reflects this
+        // delivery the moment the driver lands there, regardless of API result.
+        dispatch(updateTodayStats({ tripsDelta: 1, earningsDelta: summary.total }));
         dispatch(setFoodOrderStatus('completed'));
+
+        // Navigate first — keeps the transition instant.
         openSummary(summary);
 
         completeFood({

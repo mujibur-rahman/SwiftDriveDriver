@@ -9,6 +9,7 @@
 import { View, Text, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
 import { useTheme } from '@/theme';
 import { useGetEarningsQuery } from '@/features/earnings/earningsApi';
 import Button from '@/components/ui/Button';
@@ -17,6 +18,9 @@ export default function DeliverySummaryScreen({ navigation, route }) {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
     const successHex = isDark ? '#34D399' : '#16A34A';
+    // Local todayStats are bumped immediately when Confirm Delivery is pressed,
+    // so they reflect the just-completed delivery even before the API responds.
+    const todayStats = useSelector((s) => s.driver.todayStats);
 
     const summary = route.params?.summary ?? {
         orderNumber: '—',
@@ -28,9 +32,14 @@ export default function DeliverySummaryScreen({ navigation, route }) {
 
     const { data: earnings } = useGetEarningsQuery(
         { period: 'today' },
-        { refetchOnMountOrArgChange: false },
+        { refetchOnMountOrArgChange: true },
     );
-    const todayTotal = earnings?.summary?.totalBalance;
+    // Server data takes priority; todayStats is the immediate fallback so the
+    // value is never blank when the API is unreachable (demo / offline mode).
+    const todayTotal =
+        earnings?.summary?.totalBalance ??
+        earnings?.summary?.todayEarnings ??
+        todayStats.earnings;
 
     const rows = [
         { label: 'Base fare', value: summary.baseFare },

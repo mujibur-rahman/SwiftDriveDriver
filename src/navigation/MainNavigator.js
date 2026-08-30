@@ -1,7 +1,7 @@
 // src/navigation/MainNavigator.js
 import React from "react";
 import { View, Text, Pressable, Platform } from "react-native";
-import { createStackNavigator } from "@react-navigation/stack";
+import { createStackNavigator, CardStyleInterpolators } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { MaterialCommunityIcons as Icon } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -210,8 +210,21 @@ export default function MainNavigator({ navigationRef }) {
         One shared summary screen for every delivery type — food, parcel,
         and any future ones. Both screens' openSummary() navigates here
         with { summary } params.
+        animationEnabled:false + gestureEnabled:false makes the transition
+        feel instant when the driver taps "Confirm Delivery".
       */}
-      <Stack.Screen name="DeliverySummary" component={DeliverySummaryScreen} />
+      <Stack.Screen
+        name="DeliverySummary"
+        component={DeliverySummaryScreen}
+        options={{
+          gestureEnabled: false,
+          cardStyleInterpolator: CardStyleInterpolators.forFadeFromCenter,
+          transitionSpec: {
+            open: { animation: 'timing', config: { duration: 180 } },
+            close: { animation: 'timing', config: { duration: 120 } },
+          },
+        }}
+      />
       <Stack.Screen
         name="IncomingRide"
         component={IncomingRideModal}

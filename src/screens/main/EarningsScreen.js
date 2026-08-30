@@ -22,6 +22,9 @@ const PERIOD_CONFIG = [
 export default function EarningsScreen() {
   const dispatch = useDispatch();
   const { period = 'week' } = useSelector((s) => s.earnings);
+  // Local today stats are bumped optimistically when a delivery completes,
+  // so they are always up-to-date even when the server API is unreachable.
+  const todayStats = useSelector((s) => s.driver.todayStats);
   const { colors, isDark } = useTheme();
   const primary = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
   const success = isDark ? '#34D399' : '#16A34A';
@@ -50,22 +53,24 @@ export default function EarningsScreen() {
   const currentPeriodConfig =
     PERIOD_CONFIG.find((p) => p.key === period) || PERIOD_CONFIG[1];
 
-  // Selected period metrics (from server summary with graceful fallbacks)
+  // Selected period metrics — server data takes priority; local todayStats
+  // act as an immediate fallback for the 'today' period so that earnings
+  // from completed deliveries appear without waiting for an API refetch.
   const periodEarnings =
     summary?.periodEarnings ??
     (period === 'today' ? summary?.todayEarnings : null) ??
     (summary?.earnings != null ? summary.earnings : null) ??
     summary?.totalBalance ??
-    0;
+    (period === 'today' ? todayStats.earnings : 0);
 
   const periodTrips =
     summary?.periodTrips ??
     (period === 'today' ? summary?.todayTrips : null) ??
     (summary?.trips != null ? summary.trips : null) ??
     summary?.totalTrips ??
-    0;
+    (period === 'today' ? todayStats.trips : 0);
 
-  const periodHours = summary?.hoursOnline ?? summary?.hours ?? 0;
+  const periodHours = summary?.hoursOnline ?? summary?.hours ?? (period === 'today' ? todayStats.hours : 0);
   const perHourRate =
     periodHours > 0
       ? (Number(periodEarnings) / Number(periodHours)).toFixed(0)

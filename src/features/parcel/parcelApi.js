@@ -1,6 +1,5 @@
 // src/features/parcel/parcelApi.js
 import { apiSlice } from '@/features/api/apiSlice';
-import { updateTodayStats } from '@/features/driver/driverSlice';
 import { setParcelOrderStatus } from '@/features/parcel/parcelSlice';
 
 export const parcelApi = apiSlice.injectEndpoints({
@@ -45,15 +44,9 @@ export const parcelApi = apiSlice.injectEndpoints({
             invalidatesTags: ['Earnings', 'Parcel'],
             async onQueryStarted(_, { dispatch, queryFulfilled }) {
                 try {
-                    const { data } = await queryFulfilled;
-                    if (data?.total != null) {
-                        dispatch(
-                            updateTodayStats({
-                                tripsDelta: 1,
-                                earningsDelta: data.total,
-                            }),
-                        );
-                    }
+                    await queryFulfilled;
+                    // Earnings were already bumped optimistically in goComplete();
+                    // no need to call updateTodayStats here — that would double-count.
                     dispatch(setParcelOrderStatus('completed'));
                 } catch {
                     /* UI already completed optimistically */

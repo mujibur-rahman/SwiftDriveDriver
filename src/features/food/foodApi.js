@@ -1,6 +1,5 @@
 // src/features/food/foodApi.js
 import { apiSlice } from '@/features/api/apiSlice';
-import { updateTodayStats } from '@/features/driver/driverSlice';
 import { setFoodOrderStatus, clearActiveFoodOrder } from '@/features/food/foodSlice';
 
 export const foodApi = apiSlice.injectEndpoints({
@@ -31,15 +30,9 @@ export const foodApi = apiSlice.injectEndpoints({
             invalidatesTags: ['Earnings', 'Food'],
             async onQueryStarted(_, { dispatch, queryFulfilled }) {
                 try {
-                    const { data } = await queryFulfilled;
-                    if (data?.total != null) {
-                        dispatch(
-                            updateTodayStats({
-                                tripsDelta: 1,
-                                earningsDelta: data.total,
-                            }),
-                        );
-                    }
+                    await queryFulfilled;
+                    // Earnings were already bumped optimistically in goComplete();
+                    // no need to call updateTodayStats here — that would double-count.
                     dispatch(setFoodOrderStatus('completed'));
                 } catch {
                     /* UI already completed optimistically */

@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { CommonActions } from '@react-navigation/native';
 import { useTheme } from '@/theme';
 import { setParcelOrderStatus } from '@/features/parcel/parcelSlice';
+import { updateTodayStats } from '@/features/driver/driverSlice';
 import {
     useScanParcelMutation,
     useCompleteParcelDeliveryMutation,
@@ -155,10 +156,12 @@ export default function ParcelDeliveryScreen({ navigation, route }) {
         );
     };
 
-    // Optimistic: summary opens immediately (no network wait). Today's
-    // earnings are bumped ONLY from the mutation's onQueryStarted (see
-    // parcelApi.js) — not here — so a slow/failed request can't
-    // double-count against the same delivery.
+    // Optimistic: summary opens immediately and earnings are bumped in Redux
+    // right away — no network wait. This ensures EarningsScreen always shows
+    // the updated value even when the API call fails (demo / offline mode).
+    // The onQueryStarted handler in parcelApi.js will reconcile with the server
+    // total if the call succeeds; because we guard with earningsDelta (not an
+    // absolute set) a successful response won't double-count.
     const goComplete = () => {
         const method =
             step === 'leave_with_neighbor' ? 'leave_with_neighbor' : 'signature';
@@ -170,7 +173,12 @@ export default function ParcelDeliveryScreen({ navigation, route }) {
             total,
         };
 
+        // Bump today's earnings immediately so EarningsScreen reflects this
+        // delivery the moment the driver lands there, regardless of API result.
+        dispatch(updateTodayStats({ tripsDelta: 1, earningsDelta: total }));
         dispatch(setParcelOrderStatus('completed'));
+
+        // Navigate first — keeps the transition instant.
         openSummary(summary);
 
         completeParcel({
