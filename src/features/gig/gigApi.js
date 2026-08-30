@@ -8,4 +8,4 @@ export const gigApi = apiSlice.injectEndpoints({
 });
 
 export const {
-} = parcelApi;
+} = gigApi;
