@@ -6,7 +6,7 @@ import Avatar from "@/components/ui/Avatar";
 import Greeting from "@/components/ui/Greeting";
 
 export default function LogoAvatar({
-  appName = "ZyroAppg",
+  appName = "ZyroApp",
   name = "Driver",
   subtitle,
   showGreeting = true,

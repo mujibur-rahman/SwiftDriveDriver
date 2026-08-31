@@ -7,7 +7,7 @@ export const DEMO = {
     senderCoords: { latitude: -33.907, longitude: 151.189 },
     senderPhone: '+61298765432',
     // Recipient (drop-off)
-    recipientName: 'Rashed Karim',
+    recipientName: 'Mujibur Rahman',
     recipientAddress: '8 Regent St, Redfern NSW 2016',
     recipientCoords: { latitude: -33.8932, longitude: 151.2031 },
     recipientPhone: '+61412987654',

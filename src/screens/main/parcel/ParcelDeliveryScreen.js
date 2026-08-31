@@ -319,7 +319,8 @@ export default function ParcelDeliveryScreen({ navigation, route }) {
                         backgroundColor: isDark ? '#0D1E32' : '#FFFFFF',
                         borderTopColor: isDark ? '#1E3A5F' : '#BAE6FD',
                         transform: [{ translateY: slideAnim }],
-                        maxHeight: '55%',
+                        // Scanning needs more vertical room for the camera view
+                        maxHeight: step === 'scanning' ? '78%' : '55%',
                     },
                 ]}
             >

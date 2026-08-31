@@ -1,68 +1,110 @@
 // src/components/parcel/ParcelScanner.jsx
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Alert } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    View,
+    Text,
+    Vibration,
+    Platform,
+    StyleSheet,
+    Alert,
+} from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import Button from '@/components/ui/Button';
+import IconButton from '@/components/ui/IconButton';
+import AppTextInput from '@/components/ui/AppTextInput';
+import StatusBanner from '@/components/ui/StatusBanner';
+import ListRow from '@/components/ui/ListRow';
 
-// Loose match — trims whitespace and ignores case, so a barcode generator
-// adding/changing a checksum digit or the on-screen keyboard's autocap
-// doesn't silently break the comparison.
 const normalize = (s) => String(s ?? '').trim().toUpperCase();
 
-/**
- * Scans each parcel's barcode/QR at pickup and checks it off against the
- * order's parcel list. Requires `expo-camera` — run:
- *   npx expo install expo-camera
- * ...and make sure app.json has the expo-camera plugin + Android CAMERA
- * permission registered, then rebuild the native app (prebuild / dev
- * client) — a JS-only reload will NOT pick up new native permissions.
- *
- * Props:
- * - parcels: [{ id, label, barcode }]
- * - scannedIds: string[]        — ids already confirmed scanned
- * - onScan: (parcelId) => void  — called once per newly-matched scan
- */
-export default function ParcelScanner({ parcels, scannedIds, onScan }) {
+const BARCODE_TYPES = [
+    'qr',
+    'code128',
+    'code39',
+    'code93',
+    'ean13',
+    'ean8',
+    'upc_a',
+    'upc_e',
+    'itf14',
+    'codabar',
+    'pdf417',
+    'datamatrix',
+    'aztec',
+];
+
+export default function ParcelScanner({ parcels = [], scannedIds = [], onScan }) {
     const { colors, isDark } = useTheme();
     const primaryHex = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
-    const successHex = isDark ? '#34D399' : '#16A34A';
-    const errorHex = isDark ? '#F87171' : '#DC2626';
+
     const [permission, requestPermission] = useCameraPermissions();
-    const [locked, setLocked] = useState(false); // debounce duplicate reads of the same code
+    const [locked, setLocked] = useState(false);
     const [manualMode, setManualMode] = useState(false);
     const [manualCode, setManualCode] = useState('');
-    // Surfaces exactly what was read, right on screen — no need to dig
-    // through adb logcat / expo start logs to debug a mismatch.
-    const [lastResult, setLastResult] = useState(null); // { raw, ok, label? }
+    const [lastResult, setLastResult] = useState(null);
+    const [torch, setTorch] = useState(false);
+    const [scanningEnabled, setScanningEnabled] = useState(true);
 
-    const tryMatch = (raw) => {
-        const code = normalize(raw);
-        const match = parcels.find(
-            (p) => normalize(p.barcode) === code || normalize(p.id) === code,
-        );
+    const lockTimerRef = useRef(null);
 
-        if (!match) {
-            setLastResult({ raw, ok: false });
-            return false;
-        }
-        if (scannedIds.includes(match.id)) {
-            setLastResult({ raw, ok: false, alreadyScanned: true, label: match.label });
-            return false;
-        }
+    useEffect(() => {
+        return () => {
+            if (lockTimerRef.current) clearTimeout(lockTimerRef.current);
+        };
+    }, []);
 
-        setLastResult({ raw, ok: true, label: match.label });
-        onScan(match.id);
-        return true;
-    };
+    const tryMatch = useCallback(
+        (raw) => {
+            const code = normalize(raw);
+            if (!code) return false;
 
-    const handleBarcodeScanned = ({ data }) => {
-        if (locked) return;
-        setLocked(true);
-        tryMatch(data);
-        // Small cooldown so the same barcode isn't re-triggered on the next frame
-        setTimeout(() => setLocked(false), 1200);
-    };
+            const match = parcels.find(
+                (p) => normalize(p.barcode) === code || normalize(p.id) === code,
+            );
+
+            if (!match) {
+                setLastResult({ raw, ok: false });
+                return false;
+            }
+            if (scannedIds.includes(match.id)) {
+                setLastResult({
+                    raw,
+                    ok: false,
+                    alreadyScanned: true,
+                    label: match.label,
+                });
+                return false;
+            }
+
+            setLastResult({ raw, ok: true, label: match.label });
+            if (Platform.OS !== 'web') Vibration.vibrate(80);
+            onScan?.(match.id);
+            return true;
+        },
+        [parcels, scannedIds, onScan],
+    );
+
+    const handleBarcodeScanned = useCallback(
+        ({ data, type }) => {
+            if (!scanningEnabled || locked || !data) return;
+
+            setLocked(true);
+            setScanningEnabled(false);
+
+            const matched = tryMatch(data);
+            console.log('[ParcelScanner] scanned', { data, type, matched });
+
+            const delay = matched ? 1600 : 900;
+            if (lockTimerRef.current) clearTimeout(lockTimerRef.current);
+            lockTimerRef.current = setTimeout(() => {
+                setLocked(false);
+                setScanningEnabled(true);
+            }, delay);
+        },
+        [scanningEnabled, locked, tryMatch],
+    );
 
     const handleManualSubmit = () => {
         const code = manualCode.trim();
@@ -73,146 +115,195 @@ export default function ParcelScanner({ parcels, scannedIds, onScan }) {
         } else {
             Alert.alert(
                 'Not recognized',
-                `"${code}" doesn't match any parcel in this order. Double-check the number and try again.`,
+                `"${code}" doesn't match any parcel in this order.\n\nDemo codes:\n${parcels
+                    .map((p) => `• ${p.barcode}`)
+                    .join('\n')}`,
             );
         }
     };
 
-    // Permission state still resolving
-    if (!permission) return null;
-
-    if (!permission.granted) {
+    if (!permission) {
         return (
-            <View className="rounded-2xl border border-dashed border-border bg-background-muted items-center justify-center py-8 gap-3">
-                <Icon name="camera-off-outline" size={28} color={primaryHex} />
-                <Text className="text-sm font-inter-medium text-foreground text-center px-4">
-                    Camera access is needed to scan parcel barcodes
-                </Text>
-                <TouchableOpacity
-                    onPress={requestPermission}
-                    className="rounded-xl bg-primary px-4 py-2"
-                >
-                    <Text className="text-sm font-inter-semibold text-white">
-                        Grant camera access
-                    </Text>
-                </TouchableOpacity>
-                <Text className="text-[11px] font-inter text-foreground-muted text-center px-4">
-                    If nothing happens when you tap this, the permission was
-                    likely denied before — enable Camera manually from your
-                    phone's Settings → Apps → SwiftDrive Driver.
+            <View className="items-center justify-center py-6">
+                <Text className="text-sm font-inter text-foreground-muted">
+                    Checking camera permission…
                 </Text>
             </View>
         );
     }
 
-    return (
-        <View style={{ gap: 12 }}>
-            {!manualMode ? (
-                <View style={{ height: 220, borderRadius: 16, overflow: 'hidden' }}>
-                    <CameraView
-                        style={{ flex: 1 }}
-                        facing="back"
-                        autofocus="on"
-                        barcodeScannerSettings={{
-                            barcodeTypes: ['qr', 'code128', 'ean13', 'ean8', 'code39'],
-                        }}
-                        onBarcodeScanned={handleBarcodeScanned}
-                    />
-                </View>
-            ) : (
-                <View className="rounded-2xl border border-border bg-background-muted px-3 py-3 gap-2">
-                    <Text className="text-xs font-inter text-foreground-muted">
-                        Enter the barcode number printed on the parcel
-                    </Text>
-                    <View className="flex-row gap-2">
-                        <TextInput
+    if (!permission.granted) {
+        return (
+            <View className="items-center gap-3 rounded-2xl border border-dashed border-border bg-background-muted px-4 py-8">
+                <Icon name="camera-off-outline" size={28} color={primaryHex} />
+                <Text className="px-2 text-center text-sm font-inter-medium text-foreground">
+                    Camera access is needed to scan parcel barcodes
+                </Text>
+                <Button size="sm" onPress={requestPermission}>
+                    Grant camera access
+                </Button>
+                <Text className="px-2 text-center text-[11px] font-inter text-foreground-muted">
+                    If nothing happens, enable Camera in Settings → Apps → SwiftDrive
+                    Driver. Simulators usually have no camera — use a real device or
+                    manual entry.
+                </Text>
+                <Button
+                    size="sm"
+                    variant="ghost"
+                    leftIcon="keyboard-outline"
+                    onPress={() => setManualMode(true)}
+                >
+                    Enter barcode manually
+                </Button>
+                {manualMode && (
+                    <View className="mt-1 w-full gap-2">
+                        <AppTextInput
                             value={manualCode}
                             onChangeText={setManualCode}
                             placeholder="e.g. 8901234567890"
-                            placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
-                            keyboardType="number-pad"
-                            className="flex-1 rounded-xl border border-border bg-card px-3 py-2.5 text-sm font-inter text-foreground"
+                            autoCapitalize="characters"
+                            size="sm"
                         />
-                        <TouchableOpacity
-                            onPress={handleManualSubmit}
-                            className="rounded-xl bg-primary px-4 items-center justify-center"
-                        >
-                            <Text className="text-sm font-inter-semibold text-white">
-                                Add
-                            </Text>
-                        </TouchableOpacity>
+                        <Button size="sm" onPress={handleManualSubmit}>
+                            Add
+                        </Button>
+                    </View>
+                )}
+            </View>
+        );
+    }
+
+    return (
+        <View className="gap-2.5">
+            {!manualMode ? (
+                <View className="h-60 overflow-hidden rounded-2xl bg-black">
+                    <CameraView
+                        style={StyleSheet.absoluteFill}
+                        facing="back"
+                        enableTorch={torch}
+                        barcodeScannerSettings={{ barcodeTypes: BARCODE_TYPES }}
+                        onBarcodeScanned={
+                            scanningEnabled ? handleBarcodeScanned : undefined
+                        }
+                    />
+
+                    <View
+                        pointerEvents="none"
+                        className="absolute inset-0 items-center justify-center"
+                    >
+                        <View
+                            className="absolute left-9 top-9 h-7 w-7 border-l-[3px] border-t-[3px]"
+                            style={{ borderColor: primaryHex }}
+                        />
+                        <View
+                            className="absolute right-9 top-9 h-7 w-7 border-r-[3px] border-t-[3px]"
+                            style={{ borderColor: primaryHex }}
+                        />
+                        <View
+                            className="absolute bottom-12 left-9 h-7 w-7 border-b-[3px] border-l-[3px]"
+                            style={{ borderColor: primaryHex }}
+                        />
+                        <View
+                            className="absolute bottom-12 right-9 h-7 w-7 border-b-[3px] border-r-[3px]"
+                            style={{ borderColor: primaryHex }}
+                        />
+                        <Text className="absolute bottom-3.5 text-xs font-inter-semibold text-white">
+                            Align barcode inside the frame
+                        </Text>
+                    </View>
+
+                    <View className="absolute right-3 top-3">
+                        <IconButton
+                            icon={torch ? 'flashlight' : 'flashlight-off'}
+                            size={40}
+                            iconSize={20}
+                            variant={torch ? 'primary' : 'ghost'}
+                            onPress={() => setTorch((t) => !t)}
+                            className="rounded-full bg-card/80"
+                        />
+                    </View>
+                </View>
+            ) : (
+                <View className="gap-2 rounded-2xl border border-border bg-background-muted px-3 py-3">
+                    <Text className="text-xs font-inter text-foreground-muted">
+                        Enter the barcode / ID printed on the parcel
+                    </Text>
+                    <View className="flex-row items-center gap-2">
+                        <View className="flex-1">
+                            <AppTextInput
+                                value={manualCode}
+                                onChangeText={setManualCode}
+                                placeholder="e.g. 8901234567890"
+                                autoCapitalize="characters"
+                                size="sm"
+                            />
+                        </View>
+                        <Button size="sm" fullWidth={false} onPress={handleManualSubmit}>
+                            Add
+                        </Button>
                     </View>
                 </View>
             )}
 
-            {/* ── On-screen debug readout — what did we actually read? ── */}
             {lastResult && (
-                <View
-                    className="rounded-xl px-3 py-2 flex-row items-center gap-2"
-                    style={{
-                        backgroundColor: lastResult.ok
-                            ? `${successHex}18`
-                            : `${errorHex}18`,
-                    }}
-                >
-                    <Icon
-                        name={lastResult.ok ? 'check-circle-outline' : 'alert-circle-outline'}
-                        size={16}
-                        color={lastResult.ok ? successHex : errorHex}
-                    />
-                    <Text
-                        className="flex-1 text-xs font-inter"
-                        style={{ color: lastResult.ok ? successHex : errorHex }}
-                        numberOfLines={2}
-                    >
-                        {lastResult.ok
+                <StatusBanner
+                    variant={lastResult.ok ? 'success' : 'error'}
+                    icon={
+                        lastResult.ok ? 'check-circle-outline' : 'alert-circle-outline'
+                    }
+                    message={
+                        lastResult.ok
                             ? `Matched: ${lastResult.label}`
                             : lastResult.alreadyScanned
                                 ? `Already scanned: ${lastResult.label}`
-                                : `No match for "${lastResult.raw}" — check the demo parcel codes below`}
-                    </Text>
-                </View>
+                                : `No match for "${lastResult.raw}"`
+                    }
+                    className="py-2"
+                />
             )}
 
-            <TouchableOpacity
+            <Button
+                size="xs"
+                variant="ghost"
+                leftIcon={manualMode ? 'camera-outline' : 'keyboard-outline'}
                 onPress={() => setManualMode((v) => !v)}
-                className="self-center flex-row items-center gap-1.5 py-1"
+                className="self-center"
             >
-                <Icon
-                    name={manualMode ? 'camera-outline' : 'keyboard-outline'}
-                    size={14}
-                    color={primaryHex}
-                />
-                <Text className="text-xs font-inter-semibold text-primary">
-                    {manualMode ? 'Switch back to camera' : "Can't scan? Enter barcode manually"}
-                </Text>
-            </TouchableOpacity>
+                {manualMode ? 'Switch back to camera' : "Can't scan? Enter manually"}
+            </Button>
 
-            <View className="rounded-2xl border border-border bg-background-muted px-3 py-2 gap-1">
+            <View className="gap-1.5 rounded-2xl border border-border bg-background-muted px-2 py-2">
                 {parcels.map((p) => {
                     const done = scannedIds.includes(p.id);
                     return (
-                        <View
+                        <ListRow
                             key={p.id}
-                            className="flex-row items-center gap-3 py-2 px-1"
-                        >
-                            <Icon
-                                name={done ? 'check-circle' : 'circle-outline'}
-                                size={20}
-                                color={done ? successHex : (colors?.border ?? '#94A3B8')}
-                            />
-                            <Text
-                                className={`flex-1 text-sm font-inter ${done
-                                    ? 'text-foreground-muted line-through'
-                                    : 'text-foreground'
-                                    }`}
-                            >
-                                {p.label} · {p.id}
-                                <Text className="text-foreground-muted">
-                                    {' '}({p.barcode})
-                                </Text>
-                            </Text>
-                        </View>
+                            icon={done ? 'check-circle' : 'circle-outline'}
+                            iconColor={
+                                done
+                                    ? colors?.success ?? (isDark ? '#34D399' : '#16A34A')
+                                    : colors?.border
+                            }
+                            label={`${p.label} · ${p.id}`}
+                            subtitle={p.barcode}
+                            labelClassName={
+                                done ? 'text-foreground-muted line-through' : undefined
+                            }
+                            showChevron={false}
+                            className="border-0 bg-transparent py-1.5"
+                            rightContent={
+                                !done ? (
+                                    <Button
+                                        size="xs"
+                                        variant="outline"
+                                        fullWidth={false}
+                                        onPress={() => tryMatch(p.barcode)}
+                                    >
+                                        Tap to scan
+                                    </Button>
+                                ) : null
+                            }
+                        />
                     );
                 })}
             </View>
