@@ -36,6 +36,9 @@ export default function ParcelDeliveryScreen({ navigation, route }) {
     const [neighborPhoto, setNeighborPhoto] = useState(null);
     const [neighborNote, setNeighborNote] = useState('');
     const signatureRef = useRef(null);
+    // Step history stack — lets the back button walk back through steps
+    // rather than always exiting the screen.
+    const stepHistoryRef = useRef([]);
 
     const primaryHex = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
     const warningHex = isDark ? '#FBBF24' : '#D97706';
@@ -105,6 +108,23 @@ export default function ParcelDeliveryScreen({ navigation, route }) {
             });
         }, 250);
     }, [step, routeCoords]);
+
+    /** Navigate forward to a new step, recording the current step so the
+     *  back button can return to it. */
+    const goToStep = (next) => {
+        stepHistoryRef.current.push(step);
+        setStep(next);
+    };
+
+    /** Back handler: walk backwards through step history, or exit the screen
+     *  when there is nothing left to go back to. */
+    const handleBack = () => {
+        if (stepHistoryRef.current.length > 0) {
+            setStep(stepHistoryRef.current.pop());
+        } else {
+            navigation.goBack();
+        }
+    };
 
     const openMaps = (coords, label) => {
         const url = `https://www.google.com/maps/dir/?api=1&destination=${coords.latitude},${coords.longitude}&travelmode=driving`;
@@ -202,7 +222,7 @@ export default function ParcelDeliveryScreen({ navigation, route }) {
             cta: "I've Arrived at Pickup",
             ctaVariant: 'primary',
             ctaIcon: 'package-variant-closed',
-            onCta: () => setStep('at_pickup'),
+            onCta: () => goToStep('at_pickup'),
         },
         at_pickup: {
             title: 'Arrived at Pickup',
@@ -212,7 +232,7 @@ export default function ParcelDeliveryScreen({ navigation, route }) {
             cta: 'Start Scanning',
             ctaVariant: 'warning',
             ctaIcon: 'barcode-scan',
-            onCta: () => setStep('scanning'),
+            onCta: () => goToStep('scanning'),
         },
         scanning: {
             title: 'Scan Parcels',
@@ -222,7 +242,7 @@ export default function ParcelDeliveryScreen({ navigation, route }) {
             cta: 'Confirm Pickup',
             ctaVariant: 'warning',
             ctaIcon: 'package-variant-closed-check',
-            onCta: () => setStep('to_dropoff'),
+            onCta: () => goToStep('to_dropoff'),
             ctaDisabled: !allParcelsScanned,
         },
         to_dropoff: {
@@ -233,7 +253,7 @@ export default function ParcelDeliveryScreen({ navigation, route }) {
             cta: "I've Arrived at Drop-off",
             ctaVariant: 'success',
             ctaIcon: 'account-outline',
-            onCta: () => setStep('at_dropoff'),
+            onCta: () => goToStep('at_dropoff'),
         },
         at_dropoff: {
             title: 'Arrived at Drop-off',
@@ -278,15 +298,11 @@ export default function ParcelDeliveryScreen({ navigation, route }) {
                 routeTarget={routeTarget}
                 driverCoords={driverCoords}
                 stepMeta={stepMeta}
-                primaryHex={primaryHex}
-                warningHex={warningHex}
-                successHex={successHex}
-                isDark={isDark}
                 isNavigating={isNavigating}
                 etaDuration={etaDuration}
                 routeLoading={routeLoading}
                 insets={insets}
-                onBack={() => navigation.goBack()}
+                onBack={handleBack}
                 onOpenMaps={() =>
                     openMaps(
                         routeTarget,
@@ -338,7 +354,7 @@ export default function ParcelDeliveryScreen({ navigation, route }) {
                 >
                     <ParcelSheetBody
                         step={step}
-                        setStep={setStep}
+                        setStep={goToStep}
                         primaryHex={primaryHex}
                         warningHex={warningHex}
                         successHex={successHex}

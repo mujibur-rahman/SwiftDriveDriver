@@ -1,11 +1,14 @@
 // src/components/parcel/ParcelMapPanel.jsx
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '@/theme';
 import { DEMO } from '@/screens/main/parcel/parcelDemo';
 // Reused as-is — this stylesheet has nothing food-specific in it, it's
 // generic map/sheet chrome (marker sizes, ETA chip, bottom sheet shell).
 import { foodStyles as styles } from '@/screens/main/food/foodStyles';
+import IconButton from '@/components/ui/IconButton';
 
 export default function ParcelMapPanel({
     mapRef,
@@ -13,10 +16,6 @@ export default function ParcelMapPanel({
     routeTarget,
     driverCoords,
     stepMeta,
-    primaryHex,
-    warningHex,
-    successHex,
-    isDark,
     isNavigating,
     etaDuration,
     routeLoading,
@@ -24,6 +23,23 @@ export default function ParcelMapPanel({
     onBack,
     onOpenMaps,
 }) {
+    const navigation = useNavigation();
+    const { colors, isDark } = useTheme();
+
+    const primaryHex = colors.primary;
+    const warningHex = colors.warning;
+    const successHex = colors.success;
+    const cardBg = isDark ? 'rgba(13,30,50,0.92)' : 'rgba(255,255,255,0.95)';
+    const textColor = colors.foreground;
+
+    const handleBack = () => {
+        if (onBack) {
+            onBack();
+        } else {
+            navigation.goBack();
+        }
+    };
+
     return (
         <>
             <MapView
@@ -84,21 +100,14 @@ export default function ParcelMapPanel({
                 </Marker>
             </MapView>
 
-            <View
-                style={[
-                    styles.backBtn,
-                    {
-                        top: insets.top + 12,
-                        backgroundColor: isDark
-                            ? 'rgba(30,30,40,0.92)'
-                            : 'rgba(255,255,255,0.95)',
-                    },
-                ]}
-            >
-                <TouchableOpacity onPress={onBack} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                    <Icon name="arrow-left" size={22} color={isDark ? '#fff' : '#111'} />
-                </TouchableOpacity>
-            </View>
+            <IconButton
+                icon="arrow-left"
+                onPress={handleBack}
+                iconSize={22}
+                variant="muted"
+                className='absolute left-4 z-10'
+                style={{ top: insets.top + 12 }}
+            />
 
             {isNavigating && (
                 <View
@@ -106,17 +115,13 @@ export default function ParcelMapPanel({
                         styles.etaChip,
                         {
                             top: insets.top + 12,
-                            backgroundColor: isDark
-                                ? 'rgba(30,30,40,0.92)'
-                                : 'rgba(255,255,255,0.95)',
+                            backgroundColor: cardBg,
                         },
                     ]}
                 >
                     <Icon name="clock-outline" size={14} color={primaryHex} />
                     <View style={{ marginLeft: 6 }}>
-                        <Text
-                            style={[styles.etaTime, { color: isDark ? '#fff' : '#111' }]}
-                        >
+                        <Text style={[styles.etaTime, { color: textColor }]}>
                             {etaDuration}
                         </Text>
                         <Text style={styles.etaLabel}>{routeLoading ? '…' : 'ETA'}</Text>
@@ -125,19 +130,23 @@ export default function ParcelMapPanel({
             )}
 
             {isNavigating && routeTarget && (
-                <TouchableOpacity
+                <IconButton
+                    icon="navigation-variant"
+                    onPress={onOpenMaps}
+                    iconSize={24}
+                    color="#fff"
+                    activeOpacity={0.85}
                     style={[
                         styles.navFab,
                         {
                             bottom: 300 + insets.bottom,
                             backgroundColor: stepMeta.color,
+                            width: 52,
+                            height: 52,
+                            borderRadius: 26,
                         },
                     ]}
-                    onPress={onOpenMaps}
-                    activeOpacity={0.85}
-                >
-                    <Icon name="navigation-variant" size={24} color="#fff" />
-                </TouchableOpacity>
+                />
             )}
         </>
     );

@@ -37,6 +37,7 @@ export default function IconButton({
   color,
   variant = "primary",
   className = "",
+  style = {},
   disabled = false,
   activeOpacity = 0.7,
   ...props
@@ -64,7 +65,7 @@ export default function IconButton({
       onPress={onPress}
       disabled={disabled || !onPress}
       activeOpacity={activeOpacity}
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, ...style }}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       className={`
@@ -88,3 +89,12 @@ export default function IconButton({
   iconSize={22}
   variant="primary"
 />   */}
+
+{/* <IconButton
+  icon="arrow-left"
+  onPress={onBack}
+  iconSize={22}
+  variant="muted"
+  className='absolute left-4 z-10'
+  style={{ top: insets.top + 12 }}
+/> */}

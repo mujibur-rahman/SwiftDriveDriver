@@ -46,6 +46,9 @@ export default function FoodDeliveryScreen({ navigation, route }) {
 
     const slideAnim = useRef(new Animated.Value(300)).current;
     const mapRef = useRef(null);
+    // Step history stack — lets the back button walk back through steps
+    // rather than always exiting the screen.
+    const stepHistoryRef = useRef([]);
 
     const total = DEMO.baseFare + DEMO.tip;
     const driverCoords = currentLocation ?? DEMO_DRIVER;
@@ -111,6 +114,23 @@ export default function FoodDeliveryScreen({ navigation, route }) {
             });
         }, 250);
     }, [step, routeCoords]);
+
+    /** Navigate forward to a new step, recording the current step so the
+     *  back button can return to it. */
+    const goToStep = (next) => {
+        stepHistoryRef.current.push(step);
+        setStep(next);
+    };
+
+    /** Back handler: walk backwards through step history, or exit the screen
+     *  when there is nothing left to go back to. */
+    const handleBack = () => {
+        if (stepHistoryRef.current.length > 0) {
+            setStep(stepHistoryRef.current.pop());
+        } else {
+            navigation.goBack();
+        }
+    };
 
     const openMaps = (coords, label) => {
         const url = `https://www.google.com/maps/dir/?api=1&destination=${coords.latitude},${coords.longitude}&travelmode=driving`;
@@ -202,7 +222,7 @@ export default function FoodDeliveryScreen({ navigation, route }) {
             cta: "I've Arrived at Restaurant",
             ctaVariant: 'primary',
             ctaIcon: 'storefront-outline',
-            onCta: () => setStep('at_restaurant'),
+            onCta: () => goToStep('at_restaurant'),
         },
         at_restaurant: {
             title: 'Arrived at Restaurant',
@@ -218,7 +238,7 @@ export default function FoodDeliveryScreen({ navigation, route }) {
             cta: 'Order is Ready Now',
             ctaVariant: 'warning',
             ctaIcon: 'check',
-            onCta: () => setStep('confirm_items'),
+            onCta: () => goToStep('confirm_items'),
         },
         confirm_items: {
             title: 'Confirm Items',
@@ -233,7 +253,7 @@ export default function FoodDeliveryScreen({ navigation, route }) {
                     Alert.alert('Items', 'Please confirm all items first.');
                     return;
                 }
-                setStep('to_customer');
+                goToStep('to_customer');
             },
             ctaDisabled: !allItemsChecked,
         },
@@ -245,7 +265,7 @@ export default function FoodDeliveryScreen({ navigation, route }) {
             cta: "I've Arrived at Customer",
             ctaVariant: 'success',
             ctaIcon: 'account-outline',
-            onCta: () => setStep('at_customer'),
+            onCta: () => goToStep('at_customer'),
         },
         at_customer: {
             title: 'Arrived at Customer',
@@ -295,15 +315,11 @@ export default function FoodDeliveryScreen({ navigation, route }) {
                 routeTarget={routeTarget}
                 driverCoords={driverCoords}
                 stepMeta={stepMeta}
-                primaryHex={primaryHex}
-                warningHex={warningHex}
-                successHex={successHex}
-                isDark={isDark}
                 isNavigating={isNavigating}
                 etaDuration={etaDuration}
                 routeLoading={routeLoading}
                 insets={insets}
-                onBack={() => navigation.goBack()}
+                onBack={handleBack}
                 onOpenMaps={() =>
                     openMaps(
                         routeTarget,
@@ -355,7 +371,7 @@ export default function FoodDeliveryScreen({ navigation, route }) {
                 >
                     <FoodSheetBody
                         step={step}
-                        setStep={setStep}
+                        setStep={goToStep}
                         primaryHex={primaryHex}
                         warningHex={warningHex}
                         successHex={successHex}
