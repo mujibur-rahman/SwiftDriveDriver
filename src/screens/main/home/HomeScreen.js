@@ -17,9 +17,10 @@ import LogoAvatar from '@/components/ui/LogoAvatar';
 import ServiceCard from '@/components/ServiceCard';
 import OnlineStatus from '@/components/OnlineStatus';
 import OnlineWaiting from '@/components/OnlineWaiting';
-import Button from '@/components/ui/Button';
+import Badge from '@/components/ui/Badge';
 import IncomingFoodDeliveryModal from '@/components/food/IncomingFoodDeliveryModal';
 import IncomingParcelDeliveryModal from '@/components/parcel/IncomingParcelDeliveryModal';
+import IncomingRequestRow from '@/components/ui/IncomingRequestRow';
 
 const DEMO_RESTAURANT_COORDS = { latitude: -33.8842, longitude: 151.2101 };
 const DEMO_SENDER_COORDS = { latitude: -33.907, longitude: 151.189 };
@@ -50,6 +51,7 @@ export default function HomeScreen() {
     const mapRef = useRef(null);
     const primaryHex = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
     const warningHex = isDark ? '#FBBF24' : '#D97706';
+    const successHex = isDark ? '#34D399' : '#16A34A';
     const [foodModalVisible, setFoodModalVisible] = useState(false);
     const [parcelModalVisible, setParcelModalVisible] = useState(false);
     const anyDeliveryModalVisible = foodModalVisible || parcelModalVisible;
@@ -221,41 +223,51 @@ export default function HomeScreen() {
                             />
                         )}
                         {isOnline && (
-                            <View className="mt-3 mb-3 gap-3">
-                                <OnlineWaiting
-                                    isOnline={true}
-                                    onlineMessage="Waiting for requests..."
-                                    showPulse={true}
-                                />
-                                <View className="gap-2">
-                                    <Button
-                                        variant="primary"
-                                        size="sm"
-                                        leftIcon="car-arrow-right"
+                            <View className="mt-3 mb-3">
+                                <View className="rounded-2xl border border-border bg-card overflow-hidden">
+                                    <View className="flex-row items-center justify-between px-4 pt-3.5 pb-3">
+                                        <View className="flex-row items-center gap-2">
+                                            <View className="h-2 w-2 rounded-full bg-primary" />
+                                            <Text className="text-xs font-inter-semibold text-foreground-muted uppercase tracking-widest">
+                                                Incoming Requests
+                                            </Text>
+                                        </View>
+                                        <Badge label="3 new" variant="primary" size="sm" />
+                                    </View>
+
+                                    <View className="h-px bg-border mx-4" />
+                                    <IncomingRequestRow
+                                        icon="car"
+                                        iconColor={primaryHex}
+                                        title="Ride Request"
+                                        subtitle="2.1 km away · Surry Hills"
+                                        meta="$8.40"
                                         onPress={() => {
                                             const parent = navigation.getParent();
                                             if (parent) parent.navigate('Driver');
                                             else navigation.navigate('Driver');
                                         }}
-                                    >
-                                        You have 1 Ride Request — View Now
-                                    </Button>
-                                    <Button
-                                        variant="warning"
-                                        size="sm"
-                                        leftIcon="food"
+                                    />
+
+                                    <View className="h-px bg-border mx-4" />
+                                    <IncomingRequestRow
+                                        icon="food"
+                                        iconColor={warningHex}
+                                        title="Food Delivery"
+                                        subtitle="Hungry Jack's · 1.8 km"
+                                        meta="$8.50"
                                         onPress={openFoodModal}
-                                    >
-                                        You have 1 Food Delivery Request — View Now
-                                    </Button>
-                                    <Button
-                                        variant="success"
-                                        size="sm"
-                                        leftIcon="package-variant-closed"
+                                    />
+
+                                    <View className="h-px bg-border mx-4" />
+                                    <IncomingRequestRow
+                                        icon="package-variant-closed"
+                                        iconColor={successHex}
+                                        title="Parcel Delivery"
+                                        subtitle="QuickShip Warehouse · 2 parcels"
+                                        meta="$12.00"
                                         onPress={openParcelModal}
-                                    >
-                                        You have 1 Parcel Delivery Request — View Now
-                                    </Button>
+                                    />
                                 </View>
                             </View>
                         )}
