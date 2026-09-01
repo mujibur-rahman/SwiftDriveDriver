@@ -1,5 +1,4 @@
 // src/screens/main/gig/gigStyles.js
-// Same layout tokens as foodStyles so GigMapPanel / bottom sheet look identical.
 import { StyleSheet } from 'react-native';
 
 export const gigStyles = StyleSheet.create({

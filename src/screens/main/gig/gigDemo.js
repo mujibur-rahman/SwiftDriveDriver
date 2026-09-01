@@ -1,38 +1,47 @@
 // src/screens/main/gig/gigDemo.js
 /**
- * Demo gig job — Lawn Mowing.
- * Structure mirrors foodDemo / parcelDemo so the active-job screen
- * can stay thin and the sheet body can stay data-driven.
+ * Demo gig — Lawn Mowing.
+ * Mandatory fields used across the flow:
+ *  - short description
+ *  - requirements
+ *  - checklist
  */
+
 export const DEMO = {
   orderNumber: 'GJ-5401',
   category: 'Lawn Mowing',
   categoryIcon: 'grass',
   title: 'Front & back lawn mowing',
+  /** Short job description (mandatory on offer) */
   description:
-    'Mow front and back lawn, edge along the driveway and path, bag clippings. Tools provided on-site.',
-  // Customer / job site
+    'Front and back lawn cut, edge driveway, bag clippings. About 1.5–2 hours.',
+  /** Requirements shown before accept */
+  requirements: [
+    'Bring your own tools',
+    'Closed shoes required',
+    'Tools available on-site as backup',
+  ],
   customerName: 'Sarah K.',
   customerAddress: '42 Bourke St, Surry Hills NSW 2010',
   customerCoords: { latitude: -33.8865, longitude: 151.212 },
   customerPhone: '+61412345678',
-  // Timing & pay
   scheduledAt: 'Today · 3:00 PM',
   estimatedDuration: '1.5–2 hrs',
   distanceToJob: '2.4 km',
   durationToJob: '9 min',
-  baseFare: 45.0,
-  tip: 5.0,
+  baseFare: 45,
+  tip: 5,
   bonus: 0,
-  // Checklist shown on Start Job / In Progress
+  currency: 'USD',
+  currencySymbol: '$',
   checklist: [
-    { id: 'c1', label: 'Mow front lawn' },
-    { id: 'c2', label: 'Mow back lawn' },
+    { id: 'c1', label: 'Mow lawn' },
+    { id: 'c2', label: 'Clear weeds' },
     { id: 'c3', label: 'Edge driveway & path' },
     { id: 'c4', label: 'Bag / dispose clippings' },
   ],
-  requirements: ['Bring closed shoes', 'Tools available on-site'],
-  // Fallback route polyline (used when directions API is offline)
+  /** Cancel allowed only within this many minutes after accept */
+  cancelWindowMinutes: 15,
   routeToJob: [
     { latitude: -33.876, longitude: 151.203 },
     { latitude: -33.878, longitude: 151.206 },
@@ -43,41 +52,11 @@ export const DEMO = {
 
 export const DEMO_DRIVER = { latitude: -33.876, longitude: 151.203 };
 
-/** Extra demo jobs you can swap into IncomingGigJobModal for variety */
-export const DEMO_JOBS = [
-  DEMO,
-  {
-    orderNumber: 'GJ-5402',
-    category: 'House Cleaning',
-    categoryIcon: 'broom',
-    title: '2-bed apartment deep clean',
-    customerName: 'James T.',
-    customerAddress: '18 Crown St, Surry Hills NSW 2010',
-    customerCoords: { latitude: -33.884, longitude: 151.211 },
-    customerPhone: '+61498765432',
-    scheduledAt: 'Today · 4:30 PM',
-    estimatedDuration: '2–3 hrs',
-    distanceToJob: '1.6 km',
-    durationToJob: '7 min',
-    baseFare: 65.0,
-    tip: 8.0,
-    bonus: 0,
-  },
-  {
-    orderNumber: 'GJ-5403',
-    category: 'Moving Help',
-    categoryIcon: 'dolly',
-    title: 'Help move sofa & boxes (1 hr)',
-    customerName: 'Priya M.',
-    customerAddress: '9 Regent St, Redfern NSW 2016',
-    customerCoords: { latitude: -33.893, longitude: 151.204 },
-    customerPhone: '+61411223344',
-    scheduledAt: 'Today · 5:00 PM',
-    estimatedDuration: '1 hr',
-    distanceToJob: '3.1 km',
-    durationToJob: '12 min',
-    baseFare: 35.0,
-    tip: 0,
-    bonus: 5.0,
-  },
-];
+export function getJobTotal(job = DEMO) {
+  return (job.baseFare || 0) + (job.tip || 0) + (job.bonus || 0);
+}
+
+export function formatMoney(amount, job = DEMO) {
+  const sym = job.currencySymbol || '$';
+  return `${sym}${Number(amount || 0).toFixed(2)}`;
+}

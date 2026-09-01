@@ -4,33 +4,6 @@ import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import SvgIcon from "@/components/ui/SvgIcon";
 import { useTheme } from "@/theme";
 
-/**
- * Reusable AppTextInput component
- *
- * Props:
- * - label?: string
- * - required?: boolean
- * - rightLabel?: string
- * - onRightLabelPress?: () => void
- * - error?: string
- * - helperText?: string
- * - leftIcon?: string | React.ReactNode
- * - leftContent?: string | number | React.ReactNode
- * - rightIcon?: string | React.ReactNode
- * - rightContent?: string | number | React.ReactNode
- * - onRightPress?: () => void
- * - secureTextEntry?: boolean
- * - disabled?: boolean
- * - containerClassName?: string
- * - inputClassName?: string
- * - size?: "sm" | "md" | "lg"
- * - iconSize?: number
- * - iconColor?: string
- * - placeholderTextColor?: string
- * - selectionColor?: string
- * - cursorColor?: string
- */
-
 const AppTextInput = forwardRef(
   (
     {
@@ -56,11 +29,14 @@ const AppTextInput = forwardRef(
       // Behavior
       secureTextEntry = false,
       disabled = false,
+      multiline = false,
+      numberOfLines,
+      minHeight, // used when multiline (default 72)
 
       // Styling
       containerClassName = "",
       inputClassName = "",
-      size = "md", // sm | md | lg
+      size = "md", // sm | md | lg (ignored height when multiline)
       iconSize = 20,
       iconColor,
       placeholderTextColor,
@@ -85,8 +61,8 @@ const AppTextInput = forwardRef(
     const resolvedIconColor =
       iconColor ?? (focused && !disabled ? primaryColor : mutedColor);
 
-    // Auto eye icon when secureTextEntry is used
-    const showEyeToggle = secureTextEntry;
+    // Auto eye icon when secureTextEntry is used (single-line only)
+    const showEyeToggle = secureTextEntry && !multiline;
     const finalRightIcon = showEyeToggle
       ? isSecure
         ? "eye"
@@ -101,7 +77,7 @@ const AppTextInput = forwardRef(
       }
     };
 
-    // Size variants
+    // Size variants (single-line)
     const sizeStyles = {
       sm: "h-11 rounded-xl px-3",
       md: "h-13.5 rounded-2xl px-3.5",
@@ -111,6 +87,13 @@ const AppTextInput = forwardRef(
     const hasError = !!error;
     const isFocused = focused && !disabled;
 
+    // Multiline: flexible height, top-aligned content
+    const multilineMinH = minHeight ?? (numberOfLines ? numberOfLines * 22 + 24 : 72);
+    const containerSizeClass = multiline
+      ? "rounded-2xl px-3.5 py-2.5"
+      : sizeStyles[size] || sizeStyles.md;
+    const containerAlignClass = multiline ? "items-start" : "items-center";
+
     return (
       <View className={containerClassName}>
         {/* Label row */}
@@ -119,7 +102,9 @@ const AppTextInput = forwardRef(
             {label ? (
               <Text className="text-sm font-inter-semibold tracking-wide text-foreground-secondary">
                 {label}
-                {required && <Text className="font-inter-bold text-error"> *</Text>}
+                {required && (
+                  <Text className="font-inter-bold text-error"> *</Text>
+                )}
               </Text>
             ) : (
               <View />
@@ -144,17 +129,21 @@ const AppTextInput = forwardRef(
         {/* Input container */}
         <View
           className={`
-            flex-row items-center border
+            flex-row border
             bg-input
-            ${sizeStyles[size] || sizeStyles.md}
+            ${containerAlignClass}
+            ${containerSizeClass}
             ${isFocused ? "border-ring" : "border-border"}
             ${hasError ? "border-error" : ""}
             ${disabled ? "opacity-50" : ""}
           `}
+          style={multiline ? { minHeight: multilineMinH } : undefined}
         >
           {/* Left Content / Icon */}
           {leftContent != null ? (
-            <View className="mr-2.5 items-center justify-center">
+            <View
+              className={`mr-2.5 items-center justify-center ${multiline ? "mt-1" : ""}`}
+            >
               {typeof leftContent === "string" ||
                 typeof leftContent === "number" ? (
                 <Text className="text-base font-inter-semibold text-foreground">
@@ -165,7 +154,9 @@ const AppTextInput = forwardRef(
               )}
             </View>
           ) : leftIcon ? (
-            <View className="mr-2.5 items-center justify-center">
+            <View
+              className={`mr-2.5 items-center justify-center ${multiline ? "mt-1" : ""}`}
+            >
               {typeof leftIcon === "string" ? (
                 <SvgIcon
                   name={leftIcon}
@@ -182,16 +173,31 @@ const AppTextInput = forwardRef(
           <TextInput
             ref={ref}
             className={`
-              h-full flex-1 p-0
+              flex-1 p-0
               text-base font-inter text-foreground
+              ${multiline ? "" : "h-full"}
               ${inputClassName}
             `}
+            style={
+              multiline
+                ? {
+                  minHeight: multilineMinH - 20,
+                  textAlignVertical: "top",
+                  paddingTop: 0,
+                }
+                : undefined
+            }
             placeholderTextColor={resolvedPlaceholder}
             selectionColor={resolvedSelection}
             cursorColor={resolvedCursor}
-            secureTextEntry={isSecure}
+            secureTextEntry={multiline ? false : isSecure}
             editable={!disabled}
-            accessibilityLabel={props.accessibilityLabel ?? (typeof label === "string" ? label : undefined)}
+            multiline={multiline}
+            numberOfLines={multiline ? numberOfLines ?? 4 : undefined}
+            accessibilityLabel={
+              props.accessibilityLabel ??
+              (typeof label === "string" ? label : undefined)
+            }
             onFocus={(e) => {
               setFocused(true);
               props.onFocus?.(e);
@@ -205,7 +211,9 @@ const AppTextInput = forwardRef(
 
           {/* Right Content / Icon / Eye */}
           {rightContent != null ? (
-            <View className="ml-2.5 items-center justify-center">
+            <View
+              className={`ml-2.5 items-center justify-center ${multiline ? "mt-1" : ""}`}
+            >
               {typeof rightContent === "string" ||
                 typeof rightContent === "number" ? (
                 <Text className="text-base font-inter-semibold text-foreground">
@@ -217,13 +225,19 @@ const AppTextInput = forwardRef(
             </View>
           ) : finalRightIcon ? (
             <TouchableOpacity
-              className="ml-2.5 items-center justify-center"
+              className={`ml-2.5 items-center justify-center ${multiline ? "mt-1" : ""}`}
               onPress={handleRightPress}
               activeOpacity={0.7}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               disabled={disabled}
               accessibilityRole="button"
-              accessibilityLabel={showEyeToggle ? (isSecure ? "Show password" : "Hide password") : undefined}
+              accessibilityLabel={
+                showEyeToggle
+                  ? isSecure
+                    ? "Show password"
+                    : "Hide password"
+                  : undefined
+              }
             >
               {typeof finalRightIcon === "string" ? (
                 <SvgIcon
@@ -240,7 +254,10 @@ const AppTextInput = forwardRef(
 
         {/* Error or Helper text */}
         {hasError ? (
-          <Text className="mt-1.5 text-xs font-inter text-error" accessibilityRole="alert">
+          <Text
+            className="mt-1.5 text-xs font-inter text-error"
+            accessibilityRole="alert"
+          >
             {error}
           </Text>
         ) : helperText ? (
@@ -257,3 +274,47 @@ AppTextInput.displayName = "AppTextInput";
 
 export default React.memo(AppTextInput);
 
+
+// Usage
+
+// <AppTextInput
+//   label="Job Title"
+//   placeholder="Gig title"
+//   value={title}
+//   onChangeText={setTitle}
+// />
+
+// <AppTextInput
+//   label="Description"
+//   placeholder="Gig description"
+//   value={description}
+//   onChangeText={setDescription}
+//   multiline
+//   numberOfLines={3}
+// />
+
+// <AppTextInput
+//   label="Time estimate (minutes)"
+//   placeholder="e.g. 30"
+//   value={timeMinutes}
+//   onChangeText={setTimeMinutes}
+//   keyboardType="number-pad"
+//   rightContent="min"
+// />
+
+// <AppTextInput
+//   label="Price (NZD)"
+//   placeholder="0.00"
+//   value={jobPrice}
+//   onChangeText={setJobPrice}
+//   keyboardType="decimal-pad"
+//   rightContent="NZD"
+// />
+
+// <AppTextInput
+//   label="Location"
+//   placeholder="123 Example Street, Auckland"
+//   value={location}
+//   onChangeText={setLocation}
+//   rightIcon="map-marker"
+// />

@@ -8,10 +8,6 @@ import { DEMO } from '@/screens/main/gig/gigDemo';
 import { gigStyles as styles } from '@/screens/main/gig/gigStyles';
 import IconButton from '@/components/ui/IconButton';
 
-/**
- * Map overlay for the active gig job screen.
- * Single destination (job site) — simpler than food (restaurant + customer).
- */
 export default function GigMapPanel({
   mapRef,
   routeCoords,
@@ -24,9 +20,11 @@ export default function GigMapPanel({
   insets,
   onBack,
   onOpenMaps,
+  job,
 }) {
   const navigation = useNavigation();
   const { colors, isDark } = useTheme();
+  const j = job || DEMO;
 
   const primaryHex = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
   const successHex = colors?.success ?? (isDark ? '#34D399' : '#16A34A');
@@ -47,20 +45,20 @@ export default function GigMapPanel({
         showsUserLocation
         showsMyLocationButton={false}
         initialRegion={{
-          ...(routeTarget ?? DEMO.customerCoords),
+          ...(routeTarget ?? j.customerCoords),
           latitudeDelta: 0.03,
           longitudeDelta: 0.03,
         }}
       >
-        {routeCoords?.length > 0 && (
+        {routeCoords?.length > 0 ? (
           <Polyline
             coordinates={routeCoords}
             strokeColor={stepMeta?.color || primaryHex}
             strokeWidth={4}
           />
-        )}
+        ) : null}
 
-        <Marker coordinate={DEMO.customerCoords} title={DEMO.customerName}>
+        <Marker coordinate={j.customerCoords} title={j.customerName}>
           <View
             style={[
               styles.markerCircle,
@@ -71,7 +69,7 @@ export default function GigMapPanel({
             ]}
           >
             <Icon
-              name={DEMO.categoryIcon || 'briefcase-outline'}
+              name={j.categoryIcon || 'briefcase-outline'}
               size={20}
               color={successHex}
             />
@@ -88,7 +86,6 @@ export default function GigMapPanel({
         </Marker>
       </MapView>
 
-      {/* Back */}
       <View style={[styles.backBtn, { top: insets.top + 8, backgroundColor: cardBg }]}>
         <IconButton
           icon="arrow-left"
@@ -99,34 +96,21 @@ export default function GigMapPanel({
         />
       </View>
 
-      {/* ETA chip while navigating */}
       {isNavigating && (
         <View
-          style={[
-            styles.etaChip,
-            { top: insets.top + 8, backgroundColor: cardBg },
-          ]}
+          style={[styles.etaChip, { top: insets.top + 8, backgroundColor: cardBg }]}
         >
           <View>
             <Text style={[styles.etaTime, { color: textColor }]}>
-              {routeLoading ? '…' : etaDuration || DEMO.durationToJob}
+              {routeLoading ? '…' : etaDuration || j.durationToJob}
             </Text>
             <Text style={styles.etaLabel}>ETA</Text>
           </View>
         </View>
       )}
 
-      {/* Open external maps */}
       {isNavigating && (
-        <View
-          style={[
-            styles.navFab,
-            {
-              bottom: 340,
-              backgroundColor: primaryHex,
-            },
-          ]}
-        >
+        <View style={[styles.navFab, { bottom: 360, backgroundColor: primaryHex }]}>
           <IconButton
             icon="navigation-variant"
             size={52}

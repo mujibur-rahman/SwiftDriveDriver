@@ -28,24 +28,29 @@ const SIZES = {
     subtitle: "text-sm",
     gap: "mt-1",
   },
+  // base: {
+  //   title: "text-base font-inter-bold",
+  //   subtitle: "text-xs",
+  //   gap: "mt-1",
+  // },
   md: {
     title: "text-2xl font-inter-bold",
-    subtitle: "text-[15px]",
+    subtitle: "text-base",
     gap: "mt-1.5",
   },
   lg: {
     title: "text-3xl font-inter-extrabold",
-    subtitle: "text-base",
+    subtitle: "text-md",
     gap: "mt-2",
   },
   xl: {
     title: "text-[36px] font-inter-extrabold leading-[44px]",
-    subtitle: "text-[15px]",
+    subtitle: "text-lg",
     gap: "mt-2",
   },
   xxl: {
     title: "text-[42px] font-inter-extrabold leading-[52px]",
-    subtitle: "text-lg",
+    subtitle: "text-xl",
     gap: "mt-1",
   },
 };

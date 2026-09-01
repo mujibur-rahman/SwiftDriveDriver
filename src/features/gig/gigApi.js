@@ -21,18 +21,24 @@ export const gigApi = apiSlice.injectEndpoints({
       invalidatesTags: ['Gig'],
     }),
 
-    /**
-     * Complete a gig job.
-     * Body can include beforePhotoUri, afterPhotoUri, notes, checklist.
-     * Server reuses the shared /orders/:id/complete endpoint.
-     */
+    /** Status ping: on_the_way / arrived etc. */
+    updateGigStatus: builder.mutation({
+      query: ({ orderId, status }) => ({
+        url: `/orders/${orderId}/status`,
+        method: 'POST',
+        body: { status },
+      }),
+    }),
+
     completeGigJob: builder.mutation({
       query: ({
         orderId,
         beforePhotoUri,
         afterPhotoUri,
+        arrivalPhotoUri,
         notes,
         checklist,
+        extraWork,
       }) => ({
         url: `/orders/${orderId}/complete`,
         method: 'POST',
@@ -41,19 +47,36 @@ export const gigApi = apiSlice.injectEndpoints({
           photoUri: afterPhotoUri || beforePhotoUri || null,
           beforePhotoUri: beforePhotoUri || null,
           afterPhotoUri: afterPhotoUri || null,
+          arrivalPhotoUri: arrivalPhotoUri || null,
           notes: notes || null,
           checklist: checklist || null,
+          extraWork: extraWork || null,
         },
       }),
       invalidatesTags: ['Earnings', 'Gig'],
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          // Earnings already bumped optimistically in goComplete();
-          // avoid double-count via updateTodayStats.
+          dispatch(setGigOrderStatus('waiting_confirm'));
+        } catch {
+          /* optimistic UI */
+        }
+      },
+    }),
+
+    confirmGigCompletion: builder.mutation({
+      query: ({ orderId, rating, review }) => ({
+        url: `/orders/${orderId}/confirm`,
+        method: 'POST',
+        body: { rating, review },
+      }),
+      invalidatesTags: ['Earnings', 'Gig'],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
           dispatch(setGigOrderStatus('completed'));
         } catch {
-          /* UI already completed optimistically */
+          /* ignore */
         }
       },
     }),
@@ -63,5 +86,7 @@ export const gigApi = apiSlice.injectEndpoints({
 export const {
   useAcceptGigOrderMutation,
   useRejectGigOrderMutation,
+  useUpdateGigStatusMutation,
   useCompleteGigJobMutation,
+  useConfirmGigCompletionMutation,
 } = gigApi;

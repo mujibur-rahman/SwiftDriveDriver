@@ -24,6 +24,8 @@ import HomeScreen from "@/screens/main/home/HomeScreen";
 import FoodDeliveryScreen from "@/screens/main/food/FoodDeliveryScreen";
 import ParcelDeliveryScreen from "@/screens/main/parcel/ParcelDeliveryScreen";
 import GigJobScreen from "@/screens/main/gig/GigJobScreen";
+import GigWaitingScreen from "@/screens/main/gig/GigWaitingScreen";
+import GigCompleteScreen from "@/screens/main/gig/GigCompleteScreen";
 import DeliverySummaryScreen from "@/screens/main/DeliverySummaryScreen";
 
 const Stack = createStackNavigator();
@@ -208,6 +210,8 @@ export default function MainNavigator({ navigationRef }) {
       <Stack.Screen name="FoodDelivery" component={FoodDeliveryScreen} />
       <Stack.Screen name="ParcelDelivery" component={ParcelDeliveryScreen} />
       <Stack.Screen name="GigJob" component={GigJobScreen} />
+      <Stack.Screen name="GigWaiting" component={GigWaitingScreen} options={{ gestureEnabled: false }} />
+      <Stack.Screen name="GigComplete" component={GigCompleteScreen} options={{ gestureEnabled: false }} />
       {/*
         One shared summary screen for every delivery type — food, parcel,
         gig, and any future ones. openSummary() navigates here with

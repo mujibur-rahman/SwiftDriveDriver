@@ -2,17 +2,15 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 /**
- * Gig-jobs only UI / flow state.
- * Shared driver state (isOnline, location, todayStats) stays in driverSlice.
- * Structure mirrors foodSlice / parcelSlice for consistency.
- *
- * Status: idle | searching | incoming | active | completed
+ * Gig job flow state.
+ * Status: idle | searching | incoming | active | waiting_confirm | completed
  */
 const initialState = {
   enabled: false,
-  orderStatus: 'idle', // idle | searching | incoming | active | completed
+  orderStatus: 'idle',
   activeOrder: null,
   incomingOrder: null,
+  lastSummary: null,
   error: null,
 };
 
@@ -48,6 +46,9 @@ const gigSlice = createSlice({
       state.incomingOrder = null;
       state.orderStatus = state.enabled ? 'searching' : 'idle';
     },
+    setGigLastSummary: (state, action) => {
+      state.lastSummary = action.payload;
+    },
     setGigError: (state, action) => {
       state.error = action.payload;
     },
@@ -62,6 +63,7 @@ export const {
   clearIncomingGigOrder,
   setActiveGigOrder,
   clearActiveGigOrder,
+  setGigLastSummary,
   setGigError,
   resetGigState,
 } = gigSlice.actions;
@@ -72,3 +74,4 @@ export const selectGigEnabled = (s) => s.gig.enabled;
 export const selectGigOrderStatus = (s) => s.gig.orderStatus;
 export const selectIncomingGigOrder = (s) => s.gig.incomingOrder;
 export const selectActiveGigOrder = (s) => s.gig.activeOrder;
+export const selectGigLastSummary = (s) => s.gig.lastSummary;

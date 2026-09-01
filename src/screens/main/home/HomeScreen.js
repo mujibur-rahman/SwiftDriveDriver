@@ -303,19 +303,6 @@ export default function HomeScreen() {
                                 </View>
                             </View>
                         )}
-                        <View className="flex-1 rounded-2xl border border-border bg-card px-4 py-4 mb-4">
-                            <Text className="text-xs font-inter-semibold text-foreground-muted mb-3 uppercase tracking-widest">
-                                Advertisement
-                            </Text>
-                            <View className="rounded-xl bg-background-muted items-center justify-center py-10">
-                                <Text className="text-primary font-inter-bold text-base">
-                                    Your ad will appear here
-                                </Text>
-                                <Text className="text-foreground-muted font-inter text-xs mt-1">
-                                    Promotions · Offers · Updates
-                                </Text>
-                            </View>
-                        </View>
                     </ScrollView>
                     <View
                         className="service-grid mx-4"

@@ -1,157 +1,122 @@
 // src/components/gig/GigSheetBody.jsx
+// Step bodies for mandatory gig flow fields
 import React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+} from 'react-native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
-import { DEMO } from '@/screens/main/gig/gigDemo';
-import Badge from '@/components/ui/Badge';
+import { DEMO, formatMoney, getJobTotal } from '@/screens/main/gig/gigDemo';
 import Button from '@/components/ui/Button';
+import AppTextInput from '@/components/ui/AppTextInput';
+import Checklist from '@/components/ui/Checklist';
 
-/**
- * Bottom-sheet body content for each step of an active gig job.
- * Keeps GigJobScreen lean — all step-specific UI lives here.
- */
 export default function GigSheetBody({
   step,
-  setStep,
+  job,
   primaryHex,
-  warningHex,
   successHex,
-  colors,
+  warningHex,
   isDark,
   etaDistance,
   etaDuration,
-  total,
   routeLoading,
   checkedItems,
   toggleItem,
+  arrivalPhoto,
+  takeArrivalPhoto,
   beforePhoto,
-  afterPhoto,
   takeBeforePhoto,
+  afterPhoto,
   takeAfterPhoto,
   notes,
   setNotes,
+  extraWork,
+  onAddExtraWork,
+  workSeconds,
+  cancelSecondsLeft,
   callPhone,
+  onStartNavigation,
+  onImOnTheWay,
+  onCancelJob,
 }) {
+  const j = job || DEMO;
+  const total = getJobTotal(j);
   const muted = isDark ? '#7DD3FC' : '#64748B';
   const fg = isDark ? '#F0F9FF' : '#0F172A';
   const cardBg = isDark ? '#0D1E32' : '#F8FAFC';
   const border = isDark ? '#1E3A5F' : '#E2E8F0';
+  const checklist = j.checklist || [];
 
-  // ── Shared info card ──────────────────────────────────────────────────────
-  const InfoCard = () => (
+  const formatTimer = (sec) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
+  const InfoMini = () => (
     <View
       style={{
-        borderRadius: 16,
+        borderRadius: 14,
         borderWidth: 1,
         borderColor: border,
         backgroundColor: cardBg,
         padding: 12,
-        gap: 8,
+        gap: 6,
       }}
     >
-      <View className="flex-row items-center justify-between">
+      <View className="flex-row justify-between items-center">
         <Text style={{ color: muted, fontSize: 11, fontWeight: '600' }}>
-          {DEMO.category.toUpperCase()}
+          {(j.category || 'GIG').toUpperCase()}
         </Text>
         <Text style={{ color: primaryHex, fontSize: 15, fontWeight: '700' }}>
-          ${Number(total).toFixed(2)}
+          {formatMoney(total, j)}
         </Text>
       </View>
-      <Text style={{ color: fg, fontSize: 15, fontWeight: '600' }}>
-        {DEMO.title}
+      <Text style={{ color: fg, fontSize: 14, fontWeight: '600' }}>{j.title}</Text>
+      <Text style={{ color: muted, fontSize: 12 }} numberOfLines={2}>
+        {j.customerAddress}
       </Text>
-      <View className="flex-row items-center gap-1.5">
-        <Icon name="map-marker-outline" size={14} color={muted} />
-        <Text style={{ color: muted, fontSize: 12, flex: 1 }} numberOfLines={2}>
-          {DEMO.customerAddress}
-        </Text>
-      </View>
-      <View className="flex-row items-center gap-3">
-        <View className="flex-row items-center gap-1">
-          <Icon name="clock-outline" size={13} color={muted} />
-          <Text style={{ color: muted, fontSize: 12 }}>
-            {DEMO.estimatedDuration}
-          </Text>
-        </View>
-        <View className="flex-row items-center gap-1">
-          <Icon name="account-outline" size={13} color={muted} />
-          <Text style={{ color: muted, fontSize: 12 }}>{DEMO.customerName}</Text>
-        </View>
-      </View>
     </View>
   );
 
-  // ── Checklist ─────────────────────────────────────────────────────────────
-  const Checklist = () => (
-    <View style={{ gap: 8 }}>
-      <Text style={{ color: muted, fontSize: 11, fontWeight: '600' }}>
-        TASK CHECKLIST
-      </Text>
-      {DEMO.checklist.map((item) => {
-        const done = !!checkedItems[item.id];
-        return (
-          <TouchableOpacity
-            key={item.id}
-            onPress={() => toggleItem(item.id)}
-            activeOpacity={0.7}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 10,
-              paddingVertical: 8,
-              paddingHorizontal: 10,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: done ? successHex : border,
-              backgroundColor: done ? `${successHex}14` : cardBg,
-            }}
-          >
-            <Icon
-              name={done ? 'checkbox-marked-circle' : 'checkbox-blank-circle-outline'}
-              size={22}
-              color={done ? successHex : muted}
-            />
-            <Text
-              style={{
-                flex: 1,
-                color: fg,
-                fontSize: 14,
-                fontWeight: done ? '600' : '400',
-                textDecorationLine: done ? 'line-through' : 'none',
-              }}
-            >
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-
-  // ── Photo slot ────────────────────────────────────────────────────────────
-  const PhotoSlot = ({ label, uri, onPress, required }) => (
+  /**
+   * Photo preview slot.
+   * Uses resizeMode="contain" so portrait camera shots are not
+   * aggressively center-cropped inside a wide strip (unlike profile
+   * avatar which intentionally uses aspect [1,1] + allowsEditing).
+   */
+  const PhotoSlot = ({ label, uri, onPress, required, locked, tall }) => (
     <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.8}
+      onPress={locked ? undefined : onPress}
+      activeOpacity={locked ? 1 : 0.8}
       style={{
-        flex: 1,
-        height: 110,
+        flex: tall ? undefined : 1,
+        width: tall ? '100%' : undefined,
+        height: tall ? 180 : 140,
         borderRadius: 14,
         borderWidth: 1.5,
         borderColor: uri ? successHex : border,
         borderStyle: uri ? 'solid' : 'dashed',
-        backgroundColor: cardBg,
+        backgroundColor: isDark ? '#0A1628' : '#E8EEF5',
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
+        opacity: locked && !uri ? 0.6 : 1,
       }}
     >
       {uri ? (
-        <Image source={{ uri }} style={{ width: '100%', height: '100%' }} />
+        <Image
+          source={{ uri }}
+          style={{ width: '100%', height: '100%' }}
+          resizeMode="contain"
+        />
       ) : (
         <>
           <Icon name="camera-outline" size={26} color={muted} />
-          <Text style={{ color: muted, fontSize: 12, marginTop: 4 }}>
+          <Text style={{ color: muted, fontSize: 11, marginTop: 4 }}>
             {label}
             {required ? ' *' : ''}
           </Text>
@@ -160,111 +125,220 @@ export default function GigSheetBody({
     </TouchableOpacity>
   );
 
-  // ── Step bodies ───────────────────────────────────────────────────────────
-  if (step === 'to_location') {
+  // ── accepted: Job Accepted – Go to location ─────────────────────────────
+  if (step === 'accepted') {
     return (
       <>
-        <InfoCard />
+        <InfoMini />
+        <Text style={{ color: muted, fontSize: 13 }}>
+          {routeLoading
+            ? 'Calculating route…'
+            : `${etaDistance || j.distanceToJob} · ${etaDuration || j.durationToJob}`}
+        </Text>
+        <Button
+          variant="primary"
+          leftIcon="navigation-variant"
+          onPress={onStartNavigation}
+        >
+          Start Navigation
+        </Button>
+        <Button variant="outline" leftIcon="run" onPress={onImOnTheWay}>
+          I'm on the way
+        </Button>
+        {cancelSecondsLeft > 0 ? (
+          <Button variant="ghost" leftIcon="close" onPress={onCancelJob}>
+            {`Cancel Job (${Math.ceil(cancelSecondsLeft / 60)} min left)`}
+          </Button>
+        ) : null}
+      </>
+    );
+  }
+
+  // ── on_the_way ──────────────────────────────────────────────────────────
+  if (step === 'on_the_way') {
+    return (
+      <>
+        <InfoMini />
         <View className="flex-row items-center gap-2">
           <Icon name="navigation-variant-outline" size={16} color={primaryHex} />
           <Text style={{ color: muted, fontSize: 13 }}>
-            {routeLoading
-              ? 'Calculating route…'
-              : `${etaDistance || DEMO.distanceToJob} · ${etaDuration || DEMO.durationToJob}`}
+            {etaDistance || j.distanceToJob} · {etaDuration || j.durationToJob}
           </Text>
         </View>
         <Button
           variant="outline"
           size="sm"
           leftIcon="phone-outline"
-          onPress={() => callPhone(DEMO.customerPhone, DEMO.customerName)}
+          onPress={() => callPhone(j.customerPhone, j.customerName)}
         >
           Call customer
+        </Button>
+        {cancelSecondsLeft > 0 ? (
+          <Button variant="ghost" leftIcon="close" onPress={onCancelJob}>
+            {`Cancel Job (${Math.ceil(cancelSecondsLeft / 60)} min left)`}
+          </Button>
+        ) : null}
+      </>
+    );
+  }
+
+  // ── arrive_checkin: GPS + mandatory arrival photo ────────────────────────
+  if (step === 'arrive_checkin') {
+    return (
+      <>
+        <View
+          style={{
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: `${successHex}55`,
+            backgroundColor: `${successHex}14`,
+            padding: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          <Icon name="map-marker-check" size={22} color={successHex} />
+          <View className="flex-1">
+            <Text style={{ color: successHex, fontSize: 13, fontWeight: '700' }}>
+              GPS verification
+            </Text>
+            <Text style={{ color: muted, fontSize: 12 }}>
+              You are near the job site. Take a check-in photo to confirm arrival.
+            </Text>
+          </View>
+        </View>
+        <Text style={{ color: muted, fontSize: 12, fontWeight: '600' }}>
+          ARRIVAL PHOTO (required)
+        </Text>
+        <PhotoSlot
+          label="Arrival photo"
+          uri={arrivalPhoto}
+          onPress={takeArrivalPhoto}
+          required
+          tall
+        />
+      </>
+    );
+  }
+
+  // ── start_job: checklist + before photo + Add Extra Work ────────────────
+  if (step === 'start_job') {
+    return (
+      <>
+        <Checklist
+          title="CHECKLIST"
+          items={checklist}
+          checked={checkedItems}
+          onToggle={toggleItem}
+        />
+        <Text style={{ color: muted, fontSize: 12, fontWeight: '600' }}>
+          BEFORE PHOTO (required)
+        </Text>
+        <PhotoSlot
+          label="Before work"
+          uri={beforePhoto}
+          onPress={takeBeforePhoto}
+          required
+          tall
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          leftIcon="plus-circle-outline"
+          onPress={onAddExtraWork}
+        >
+          Add Extra Work
+        </Button>
+        {extraWork?.length > 0 ? (
+          <View style={{ gap: 4 }}>
+            {extraWork.map((e, i) => (
+              <Text key={i} style={{ color: fg, fontSize: 13 }}>
+                {`• ${e.label} (+${formatMoney(e.amount, j)})`}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+      </>
+    );
+  }
+
+  // ── in_progress: timer + notes + extra work list + checklist ───────────
+  if (step === 'in_progress') {
+    return (
+      <>
+        <View
+          style={{
+            alignItems: 'center',
+            paddingVertical: 8,
+            borderRadius: 14,
+            backgroundColor: `${primaryHex}14`,
+            borderWidth: 1,
+            borderColor: `${primaryHex}40`,
+          }}
+        >
+          <Text style={{ color: muted, fontSize: 11, fontWeight: '600' }}>
+            WORK TIMER
+          </Text>
+          <Text
+            style={{
+              color: primaryHex,
+              fontSize: 28,
+              fontWeight: '800',
+              letterSpacing: 1,
+            }}
+          >
+            {formatTimer(workSeconds)}
+          </Text>
+        </View>
+        <Checklist
+          title="CHECKLIST"
+          items={checklist}
+          checked={checkedItems}
+          onToggle={toggleItem}
+        />
+        <AppTextInput
+          label="Work notes"
+          value={notes}
+          onChangeText={setNotes}
+          placeholder="Write notes about the job…"
+          multiline
+          numberOfLines={4}
+          minHeight={88}
+        />
+        {extraWork?.length > 0 ? (
+          <View style={{ gap: 4 }}>
+            <Text style={{ color: muted, fontSize: 11, fontWeight: '600' }}>
+              EXTRA WORK
+            </Text>
+            {extraWork.map((e, i) => (
+              <Text key={i} style={{ color: fg, fontSize: 13 }}>
+                {`• ${e.label} (+${formatMoney(e.amount, j)})`}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+        <Button
+          variant="outline"
+          size="sm"
+          leftIcon="plus-circle-outline"
+          onPress={onAddExtraWork}
+        >
+          Add Extra Work
         </Button>
       </>
     );
   }
 
-  if (step === 'arrived') {
+  // ── proof: before auto + after required ─────────────────────────────────
+  if (step === 'proof') {
     return (
       <>
-        <InfoCard />
         <Text style={{ color: muted, fontSize: 13 }}>
-          Confirm you are at the job site, then start the work.
-        </Text>
-        <View className="flex-row gap-2">
-          <View className="flex-1">
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon="phone-outline"
-              onPress={() => callPhone(DEMO.customerPhone, DEMO.customerName)}
-            >
-              Call
-            </Button>
-          </View>
-          <View className="flex-1">
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon="play-circle-outline"
-              onPress={() => setStep('start_job')}
-            >
-              Start Job
-            </Button>
-          </View>
-        </View>
-      </>
-    );
-  }
-
-  if (step === 'start_job') {
-    return (
-      <>
-        <Text style={{ color: muted, fontSize: 13, marginBottom: 4 }}>
-          Review the tasks, then begin. You can check items off as you go.
-        </Text>
-        <Checklist />
-        {DEMO.requirements?.length > 0 && (
-          <View style={{ gap: 4 }}>
-            <Text style={{ color: muted, fontSize: 11, fontWeight: '600' }}>
-              REQUIREMENTS
-            </Text>
-            {DEMO.requirements.map((r) => (
-              <Text key={r} style={{ color: fg, fontSize: 13 }}>
-                • {r}
-              </Text>
-            ))}
-          </View>
-        )}
-      </>
-    );
-  }
-
-  if (step === 'in_progress') {
-    return (
-      <>
-        <Checklist />
-        <Text style={{ color: muted, fontSize: 12 }}>
-          Mark all tasks when done, then complete the job with photos.
-        </Text>
-      </>
-    );
-  }
-
-  if (step === 'complete_photos') {
-    return (
-      <>
-        <Text style={{ color: muted, fontSize: 13, marginBottom: 4 }}>
-          Take before & after photos as proof of work.
+          Before photo is already attached. Take an after photo to submit.
         </Text>
         <View className="flex-row gap-3">
-          <PhotoSlot
-            label="Before"
-            uri={beforePhoto}
-            onPress={takeBeforePhoto}
-            required
-          />
+          <PhotoSlot label="Before" uri={beforePhoto} locked required />
           <PhotoSlot
             label="After"
             uri={afterPhoto}
@@ -272,9 +346,9 @@ export default function GigSheetBody({
             required
           />
         </View>
-        <Text style={{ color: muted, fontSize: 11 }}>
-          Photos help resolve disputes and unlock faster payouts.
-        </Text>
+        {notes ? (
+          <Text style={{ color: muted, fontSize: 12 }}>{`Notes: ${notes}`}</Text>
+        ) : null}
       </>
     );
   }

@@ -1,25 +1,17 @@
 // src/components/gig/IncomingGigJobModal.jsx
+// New Gig Job offer — short description + requirements (mandatory)
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, Animated, ScrollView } from 'react-native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import AppModal from '@/components/ui/AppModal';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import StatRow from '@/components/ui/StatRow';
-import { DEMO } from '@/screens/main/gig/gigDemo';
+import { DEMO, getJobTotal, formatMoney } from '@/screens/main/gig/gigDemo';
 
 const COUNTDOWN_SECONDS = 25;
 
-/**
- * IncomingGigJobModal
- *
- * Props:
- * - visible: boolean
- * - onAccept: () => void
- * - onDecline: () => void
- * - order?: override demo payload (optional)
- */
 export default function IncomingGigJobModal({
   visible,
   onAccept,
@@ -35,20 +27,18 @@ export default function IncomingGigJobModal({
   const primaryHex = colors?.primary ?? (isDark ? '#38BDF8' : '#0EA5E9');
   const errorHex = isDark ? '#F87171' : '#DC2626';
   const urgentColor = countdown <= 7 ? errorHex : primaryHex;
-  const total = (job.baseFare || 0) + (job.tip || 0) + (job.bonus || 0);
+  const total = getJobTotal(job);
+  const muted = isDark ? '#7DD3FC' : '#64748B';
 
   useEffect(() => {
     if (!visible) return;
-
     setCountdown(COUNTDOWN_SECONDS);
     progressAnim.setValue(1);
-
     Animated.timing(progressAnim, {
       toValue: 0,
       duration: COUNTDOWN_SECONDS * 1000,
       useNativeDriver: false,
     }).start();
-
     timerRef.current = setInterval(() => {
       setCountdown((c) => {
         if (c <= 1) {
@@ -59,17 +49,13 @@ export default function IncomingGigJobModal({
         return c - 1;
       });
     }, 1000);
-
-    return () => {
-      clearInterval(timerRef.current);
-    };
+    return () => clearInterval(timerRef.current);
   }, [visible]);
 
   const handleAccept = () => {
     clearInterval(timerRef.current);
     onAccept?.();
   };
-
   const handleDecline = () => {
     clearInterval(timerRef.current);
     onDecline?.();
@@ -85,13 +71,12 @@ export default function IncomingGigJobModal({
       visible={visible}
       onClose={handleDecline}
       closeOnOverlay={false}
-      showHandle={true}
+      showHandle
       hideActions
       scrollable={false}
       className="pb-2"
     >
-      {/* Countdown progress bar */}
-      <View className="h-1 w-full rounded-full bg-background-muted overflow-hidden mb-5 -mt-1">
+      <View className="h-1 w-full rounded-full bg-background-muted overflow-hidden mb-4 -mt-1">
         <Animated.View
           style={{
             width: progressWidth,
@@ -102,7 +87,6 @@ export default function IncomingGigJobModal({
         />
       </View>
 
-      {/* Header */}
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-1 mr-3">
           <Text className="text-xl font-inter-bold text-foreground">
@@ -123,91 +107,61 @@ export default function IncomingGigJobModal({
             justifyContent: 'center',
           }}
         >
-          <Text
-            style={{
-              color: urgentColor,
-              fontSize: 18,
-              fontWeight: '800',
-            }}
-          >
+          <Text style={{ color: urgentColor, fontSize: 18, fontWeight: '800' }}>
             {countdown}s
           </Text>
         </View>
       </View>
 
       <Badge
-        label={job.category || 'GIG JOB'}
+        label={job.category}
         variant="primary"
         icon={job.categoryIcon || 'briefcase-outline'}
         shape="pill"
         size="sm"
         uppercase
-        className="mb-4"
+        className="mb-3"
       />
 
-      {/* Job site info */}
-      <View className="gap-2.5 mb-4">
-        <View className="flex-row items-start gap-3 rounded-xl border border-border bg-background-muted px-4 py-3">
-          <View
-            className="h-9 w-9 items-center justify-center rounded-full"
-            style={{
-              backgroundColor: `${primaryHex}26`,
-              borderWidth: 1,
-              borderColor: `${primaryHex}4D`,
-            }}
-          >
-            <Icon
-              name={job.categoryIcon || 'briefcase-outline'}
-              size={18}
-              color={primaryHex}
-            />
-          </View>
-          <View className="flex-1">
-            <Text className="text-[11px] font-inter-semibold text-foreground-muted uppercase tracking-wider">
-              Job site
-            </Text>
-            <Text
-              className="text-sm font-inter-bold text-foreground mt-0.5"
-              numberOfLines={1}
-            >
-              {job.title}
-            </Text>
-            <Text
-              className="text-xs font-inter text-foreground-muted mt-0.5"
-              numberOfLines={2}
-            >
-              {job.customerAddress}
-            </Text>
-          </View>
-        </View>
+      <Text className="text-base font-inter-bold text-foreground mb-1">
+        {job.title}
+      </Text>
 
-        <View className="flex-row items-start gap-3 rounded-xl border border-border bg-background-muted px-4 py-3">
-          <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/15 border border-primary/30">
-            <Icon name="account-outline" size={18} color={primaryHex} />
-          </View>
-          <View className="flex-1">
-            <Text className="text-[11px] font-inter-semibold text-foreground-muted uppercase tracking-wider">
-              Customer
-            </Text>
-            <Text
-              className="text-sm font-inter-bold text-foreground mt-0.5"
-              numberOfLines={1}
-            >
-              {job.customerName}
-            </Text>
-            <Text className="text-xs font-inter text-foreground-muted mt-0.5">
-              {job.scheduledAt || 'ASAP'} · {job.estimatedDuration || ''}
-            </Text>
-          </View>
-        </View>
+      {/* Short Job Description — mandatory */}
+      <Text className="text-sm font-inter text-foreground-muted mb-3 leading-5">
+        {job.description}
+      </Text>
+
+      <View className="flex-row items-start gap-2 mb-3">
+        <Icon name="map-marker-outline" size={16} color={muted} />
+        <Text className="text-xs font-inter text-foreground-muted flex-1">
+          {job.customerAddress}
+        </Text>
       </View>
 
+      {/* Requirements — mandatory */}
+      {job.requirements?.length > 0 ? (
+        <View className="rounded-xl border border-border bg-background-muted px-3 py-3 mb-3">
+          <Text className="text-[11px] font-inter-semibold text-foreground-muted uppercase tracking-widest mb-2">
+            Requirements
+          </Text>
+          {job.requirements.map((r) => (
+            <View key={r} className="flex-row items-start gap-2 mb-1">
+              <Icon name="check-circle-outline" size={14} color={primaryHex} />
+              <Text className="text-sm font-inter text-foreground flex-1">
+                {r}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       <StatRow
-        className="mb-5 border border-border bg-card"
+        className="mb-4 border border-border bg-card"
         items={[
           { label: 'Distance', value: job.distanceToJob || '—' },
-          { label: 'ETA', value: job.durationToJob || '—' },
-          { label: 'Earnings', value: `$${Number(total).toFixed(2)}` },
+          { label: 'Duration', value: job.estimatedDuration || '—' },
+          { label: 'Pay', value: formatMoney(total, job) },
         ]}
       />
 
