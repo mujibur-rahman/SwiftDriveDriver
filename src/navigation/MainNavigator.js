@@ -23,6 +23,7 @@ import FLStatusScreen from "@/screens/main/FLStatusScreen";
 import HomeScreen from "@/screens/main/home/HomeScreen";
 import FoodDeliveryScreen from "@/screens/main/food/FoodDeliveryScreen";
 import ParcelDeliveryScreen from "@/screens/main/parcel/ParcelDeliveryScreen";
+import GigJobScreen from "@/screens/main/gig/GigJobScreen";
 import DeliverySummaryScreen from "@/screens/main/DeliverySummaryScreen";
 
 const Stack = createStackNavigator();
@@ -206,10 +207,11 @@ export default function MainNavigator({ navigationRef }) {
       <Stack.Screen name="FLStatus" component={FLStatusScreen} />
       <Stack.Screen name="FoodDelivery" component={FoodDeliveryScreen} />
       <Stack.Screen name="ParcelDelivery" component={ParcelDeliveryScreen} />
+      <Stack.Screen name="GigJob" component={GigJobScreen} />
       {/*
         One shared summary screen for every delivery type — food, parcel,
-        and any future ones. Both screens' openSummary() navigates here
-        with { summary } params.
+        gig, and any future ones. openSummary() navigates here with
+        { summary } params.
         animationEnabled:false + gestureEnabled:false makes the transition
         feel instant when the driver taps "Confirm Delivery".
       */}

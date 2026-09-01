@@ -42,6 +42,13 @@ const ServiceCard = ({ job, onPress, iconSize = 28, className = "" }) => {
       navigation.navigate("FoodDelivery");
     }
 
+    // Gig jobs — opens the active-job screen in demo mode (or waiting
+    // state). Incoming requests still come from the Home "Incoming
+    // Requests" list / modal, same as food & parcel.
+    if (job?.id === "3" || job?.title === "Gig jobs") {
+      navigation.navigate("GigJob");
+    }
+
     if (job?.id === "4" || job?.title === "Parcel delivery") {
       navigation.navigate("ParcelDelivery");
     }

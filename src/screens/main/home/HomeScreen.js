@@ -10,6 +10,7 @@ import { useUpdateDriverStatusMutation } from '@/features/driver/driverApi';
 import { setOnlineStatus } from '@/features/driver/driverSlice';
 import { setFoodOrderStatus } from '@/features/food/foodSlice';
 import { setParcelOrderStatus } from '@/features/parcel/parcelSlice';
+import { setGigOrderStatus } from '@/features/gig/gigSlice';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { DARK_MAP_STYLE } from '@/utils/mapStyles';
@@ -20,6 +21,7 @@ import OnlineWaiting from '@/components/OnlineWaiting';
 import Badge from '@/components/ui/Badge';
 import IncomingFoodDeliveryModal from '@/components/food/IncomingFoodDeliveryModal';
 import IncomingParcelDeliveryModal from '@/components/parcel/IncomingParcelDeliveryModal';
+import IncomingGigJobModal from '@/components/gig/IncomingGigJobModal';
 import IncomingRequestRow from '@/components/ui/IncomingRequestRow';
 
 const DEMO_RESTAURANT_COORDS = { latitude: -33.8842, longitude: 151.2101 };
@@ -54,7 +56,9 @@ export default function HomeScreen() {
     const successHex = isDark ? '#34D399' : '#16A34A';
     const [foodModalVisible, setFoodModalVisible] = useState(false);
     const [parcelModalVisible, setParcelModalVisible] = useState(false);
-    const anyDeliveryModalVisible = foodModalVisible || parcelModalVisible;
+    const [gigModalVisible, setGigModalVisible] = useState(false);
+    const anyDeliveryModalVisible =
+        foodModalVisible || parcelModalVisible || gigModalVisible;
 
     useEffect(() => {
         if (incomingRide && rideStatus === 'incoming') {
@@ -140,6 +144,24 @@ export default function HomeScreen() {
         const parent = navigation.getParent();
         if (parent) parent.navigate('ParcelDelivery');
         else navigation.navigate('ParcelDelivery');
+    };
+
+    const openGigModal = () => {
+        dispatch(setGigOrderStatus('incoming'));
+        setGigModalVisible(true);
+    };
+
+    const onGigDecline = () => {
+        setGigModalVisible(false);
+        dispatch(setGigOrderStatus('idle'));
+    };
+
+    const onGigAccept = () => {
+        setGigModalVisible(false);
+        dispatch(setGigOrderStatus('active'));
+        const parent = navigation.getParent();
+        if (parent) parent.navigate('GigJob');
+        else navigation.navigate('GigJob');
     };
 
     return (
@@ -232,7 +254,7 @@ export default function HomeScreen() {
                                                 Incoming Requests
                                             </Text>
                                         </View>
-                                        <Badge label="3 new" variant="primary" size="sm" />
+                                        <Badge label="4 new" variant="primary" size="sm" />
                                     </View>
 
                                     <View className="h-px bg-border mx-4" />
@@ -267,6 +289,16 @@ export default function HomeScreen() {
                                         subtitle="QuickShip Warehouse · 2 parcels"
                                         meta="$12.00"
                                         onPress={openParcelModal}
+                                    />
+
+                                    <View className="h-px bg-border mx-4" />
+                                    <IncomingRequestRow
+                                        icon="briefcase-outline"
+                                        iconColor={primaryHex}
+                                        title="Gig Job · Lawn Mowing"
+                                        subtitle="42 Bourke St · 2.4 km"
+                                        meta="$50.00"
+                                        onPress={openGigModal}
                                     />
                                 </View>
                             </View>
@@ -305,6 +337,11 @@ export default function HomeScreen() {
                 visible={parcelModalVisible}
                 onDecline={onParcelDecline}
                 onAccept={onParcelAccept}
+            />
+            <IncomingGigJobModal
+                visible={gigModalVisible}
+                onDecline={onGigDecline}
+                onAccept={onGigAccept}
             />
         </View>
     );
