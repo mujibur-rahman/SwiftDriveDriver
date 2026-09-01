@@ -11,6 +11,7 @@ import { setOnlineStatus } from '@/features/driver/driverSlice';
 import { setFoodOrderStatus } from '@/features/food/foodSlice';
 import { setParcelOrderStatus } from '@/features/parcel/parcelSlice';
 import { setGigOrderStatus } from '@/features/gig/gigSlice';
+import { setMarketplaceOrderStatus } from '@/features/marketplace/marketplaceSlice';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { DARK_MAP_STYLE } from '@/utils/mapStyles';
@@ -22,6 +23,7 @@ import Badge from '@/components/ui/Badge';
 import IncomingFoodDeliveryModal from '@/components/food/IncomingFoodDeliveryModal';
 import IncomingParcelDeliveryModal from '@/components/parcel/IncomingParcelDeliveryModal';
 import IncomingGigJobModal from '@/components/gig/IncomingGigJobModal';
+import IncomingMarketplacePickupModal from '@/components/marketplace/IncomingMarketplacePickupModal';
 import IncomingRequestRow from '@/components/ui/IncomingRequestRow';
 
 const DEMO_RESTAURANT_COORDS = { latitude: -33.8842, longitude: 151.2101 };
@@ -57,8 +59,9 @@ export default function HomeScreen() {
     const [foodModalVisible, setFoodModalVisible] = useState(false);
     const [parcelModalVisible, setParcelModalVisible] = useState(false);
     const [gigModalVisible, setGigModalVisible] = useState(false);
+    const [marketplaceModalVisible, setMarketplaceModalVisible] = useState(false);
     const anyDeliveryModalVisible =
-        foodModalVisible || parcelModalVisible || gigModalVisible;
+        foodModalVisible || parcelModalVisible || gigModalVisible || marketplaceModalVisible;
 
     useEffect(() => {
         if (incomingRide && rideStatus === 'incoming') {
@@ -164,6 +167,24 @@ export default function HomeScreen() {
         else navigation.navigate('GigJob');
     };
 
+    const openMarketplaceModal = () => {
+        dispatch(setMarketplaceOrderStatus('incoming'));
+        setMarketplaceModalVisible(true);
+    };
+
+    const onMarketplaceDecline = () => {
+        setMarketplaceModalVisible(false);
+        dispatch(setMarketplaceOrderStatus('idle'));
+    };
+
+    const onMarketplaceAccept = () => {
+        setMarketplaceModalVisible(false);
+        dispatch(setMarketplaceOrderStatus('active'));
+        const parent = navigation.getParent();
+        if (parent) parent.navigate('MarketplacePickup');
+        else navigation.navigate('MarketplacePickup');
+    };
+
     return (
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
@@ -254,7 +275,7 @@ export default function HomeScreen() {
                                                 Incoming Requests
                                             </Text>
                                         </View>
-                                        <Badge label="4 new" variant="primary" size="sm" />
+                                        <Badge label="5 new" variant="primary" size="sm" />
                                     </View>
 
                                     <View className="h-px bg-border mx-4" />
@@ -300,6 +321,16 @@ export default function HomeScreen() {
                                         meta="$50.00"
                                         onPress={openGigModal}
                                     />
+
+                                    <View className="h-px bg-border mx-4" />
+                                    <IncomingRequestRow
+                                        icon="cart-outline"
+                                        iconColor={warningHex}
+                                        title="Marketplace Pickup"
+                                        subtitle="Wooden accent chair · $65.00"
+                                        meta="$8.00"
+                                        onPress={openMarketplaceModal}
+                                    />
                                 </View>
                             </View>
                         )}
@@ -329,6 +360,11 @@ export default function HomeScreen() {
                 visible={gigModalVisible}
                 onDecline={onGigDecline}
                 onAccept={onGigAccept}
+            />
+            <IncomingMarketplacePickupModal
+                visible={marketplaceModalVisible}
+                onDecline={onMarketplaceDecline}
+                onAccept={onMarketplaceAccept}
             />
         </View>
     );

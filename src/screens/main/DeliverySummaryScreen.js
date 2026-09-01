@@ -108,6 +108,21 @@ export default function DeliverySummaryScreen({ navigation, route }) {
                         Today’s earnings: ${Number(todayTotal).toFixed(2)}
                     </Text>
                 )}
+
+                {/*
+                  Optional — only marketplace pickup passes this. Cash the
+                  driver collected from a buyer belongs to the seller, not
+                  the driver's own earnings, so it's called out separately
+                  and deliberately kept OUT of the `total` above.
+                */}
+                {summary.cashCollected != null && summary.cashCollected > 0 && (
+                    <View className="mt-4 rounded-xl border border-warning/30 bg-warning/10 px-3.5 py-3 flex-row items-center gap-2.5">
+                        <Icon name="cash-multiple" size={18} color={isDark ? '#FBBF24' : '#D97706'} />
+                        <Text className="flex-1 text-xs font-inter text-foreground">
+                            Collected ${Number(summary.cashCollected).toFixed(2)} cash for the seller — not part of your earnings. Remit per marketplace policy.
+                        </Text>
+                    </View>
+                )}
             </ScrollView>
 
             <View className="px-5 gap-2">

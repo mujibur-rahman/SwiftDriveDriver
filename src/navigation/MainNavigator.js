@@ -24,6 +24,7 @@ import HomeScreen from "@/screens/main/home/HomeScreen";
 import FoodDeliveryScreen from "@/screens/main/food/FoodDeliveryScreen";
 import ParcelDeliveryScreen from "@/screens/main/parcel/ParcelDeliveryScreen";
 import GigJobScreen from "@/screens/main/gig/GigJobScreen";
+import MarketplacePickupScreen from "@/screens/main/marketplace/MarketplacePickupScreen";
 import GigWaitingScreen from "@/screens/main/gig/GigWaitingScreen";
 import GigCompleteScreen from "@/screens/main/gig/GigCompleteScreen";
 import DeliverySummaryScreen from "@/screens/main/DeliverySummaryScreen";
@@ -210,6 +211,12 @@ export default function MainNavigator({ navigationRef }) {
       <Stack.Screen name="FoodDelivery" component={FoodDeliveryScreen} />
       <Stack.Screen name="ParcelDelivery" component={ParcelDeliveryScreen} />
       <Stack.Screen name="GigJob" component={GigJobScreen} />
+      {/*
+        Marketplace pickup has no async customer-confirmation wait (unlike
+        gig) — the buyer is present at hand-off, so it completes straight
+        to the shared DeliverySummary like food/parcel do.
+      */}
+      <Stack.Screen name="MarketplacePickup" component={MarketplacePickupScreen} />
       <Stack.Screen name="GigWaiting" component={GigWaitingScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="GigComplete" component={GigCompleteScreen} options={{ gestureEnabled: false }} />
       {/*
