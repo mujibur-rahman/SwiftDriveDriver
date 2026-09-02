@@ -1,5 +1,5 @@
 // src/components/marketplace/MarketplaceSheetBody.jsx
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text } from 'react-native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { DEMO } from '@/screens/main/marketplace/marketplaceDemo';
 import Button from '@/components/ui/Button';
