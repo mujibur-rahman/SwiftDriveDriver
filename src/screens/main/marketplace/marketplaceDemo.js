@@ -6,6 +6,11 @@ export const DEMO = {
     itemPrice: 65.0,
     listingSource: 'Facebook Marketplace',
     itemPhotoUri: null, // listing photo — null shows a placeholder swatch in UI
+    // Buyer-provided verification code. Shown to the driver as a barcode at
+    // pickup so the SELLER can confirm this driver is genuinely acting for
+    // the buyer who booked the item — not an impersonator/scalper trying to
+    // grab the listing before the real buyer's courier arrives.
+    pickupCode: 'BYR-71D9K2',
     // 'prepaid' | 'cod_cash' | 'cod_card' — drives whether the
     // "Collect Payment" step appears at drop-off at all.
     paymentMode: 'cod_cash',

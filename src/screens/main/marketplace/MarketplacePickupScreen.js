@@ -9,6 +9,7 @@ import { useTheme } from '@/theme';
 import { setMarketplaceOrderStatus } from '@/features/marketplace/marketplaceSlice';
 import { updateTodayStats } from '@/features/driver/driverSlice';
 import {
+    useConfirmPickupCodeMutation,
     useVerifyMarketplaceItemMutation,
     useCollectMarketplacePaymentMutation,
     useCompleteMarketplacePickupMutation,
@@ -29,12 +30,14 @@ export default function MarketplacePickupScreen({ navigation, route }) {
 
     const job = route?.params?.job || activeOrder || DEMO;
 
+    const [confirmPickupCode] = useConfirmPickupCodeMutation();
     const [verifyItem] = useVerifyMarketplaceItemMutation();
     const [collectPayment] = useCollectMarketplacePaymentMutation();
     const [completePickup, { isLoading }] = useCompleteMarketplacePickupMutation();
 
     const [step, setStep] = useState(route?.params?.initialStep ?? 'to_pickup');
     const [itemPhoto, setItemPhoto] = useState(null);
+    const [codeConfirmed, setCodeConfirmed] = useState(false);
     const [handoffPhoto, setHandoffPhoto] = useState(null);
     const [paymentCollected, setPaymentCollected] = useState(false);
     // Step history stack — same back-button pattern as parcel/gig.
@@ -150,6 +153,17 @@ export default function MarketplacePickupScreen({ navigation, route }) {
         }
     };
 
+    // Optimistic toggle — same fire-and-forget pattern as onTogglePaymentCollected.
+    const onToggleCodeConfirmed = () => {
+        const next = !codeConfirmed;
+        setCodeConfirmed(next);
+        if (next) {
+            confirmPickupCode({ orderId: job.orderNumber, code: job.pickupCode })
+                .unwrap()
+                .catch((e) => console.warn('[Marketplace] confirm-code failed', e?.message || e));
+        }
+    };
+
     // Optimistic: item is marked verified locally right away, background
     // sync only — same fire-and-forget pattern as parcel's scanParcel.
     const takeItemPhoto = () =>
@@ -230,13 +244,24 @@ export default function MarketplacePickupScreen({ navigation, route }) {
         },
         at_pickup: {
             title: 'Arrived at Pickup',
-            subtitle: 'Verify the item before leaving',
+            subtitle: 'Verify the buyer code, then the item',
             badge: { label: 'AT PICKUP', variant: 'warning' },
             color: warningHex,
-            cta: 'Verify Item',
+            cta: 'Verify Buyer Code',
+            ctaVariant: 'warning',
+            ctaIcon: 'barcode-scan',
+            onCta: () => goToStep('verify_code'),
+        },
+        verify_code: {
+            title: 'Verify Buyer Code',
+            subtitle: 'Show the seller this barcode to confirm you',
+            badge: { label: 'VERIFYING', variant: 'warning' },
+            color: warningHex,
+            cta: 'Continue to Item Check',
             ctaVariant: 'warning',
             ctaIcon: 'camera-marker-outline',
             onCta: () => goToStep('verify_item'),
+            ctaDisabled: !codeConfirmed,
         },
         verify_item: {
             title: 'Verify Item',
@@ -363,6 +388,8 @@ export default function MarketplacePickupScreen({ navigation, route }) {
                         paymentCollected={paymentCollected}
                         onTogglePaymentCollected={onTogglePaymentCollected}
                         callPhone={callPhone}
+                        codeConfirmed={codeConfirmed}
+                        onToggleCodeConfirmed={onToggleCodeConfirmed}
                     />
                 </ScrollView>
 

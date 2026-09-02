@@ -7,6 +7,7 @@ import StatRow from '@/components/ui/StatRow';
 import PlaceRow from '@/components/food/PlaceRow';
 import PhotoSlot from '@/components/ui/PhotoSlot';
 import Heading from '@/components/ui/Heading';
+import PickupVerificationBarcode from '@/components/marketplace/PickupVerificationBarcode';
 
 export default function MarketplaceSheetBody({
     step,
@@ -24,6 +25,8 @@ export default function MarketplaceSheetBody({
     paymentCollected,
     onTogglePaymentCollected,
     callPhone,
+    codeConfirmed,
+    onToggleCodeConfirmed,
 }) {
     switch (step) {
         case 'to_pickup':
@@ -106,6 +109,26 @@ export default function MarketplaceSheetBody({
                             Compare it against the listing photo and take your own
                         </Text>
                     </View>
+                </>
+            );
+
+        case 'verify_code':
+            return (
+                <>
+                    <PlaceRow
+                        icon="tag-outline"
+                        iconColor={warningHex}
+                        title={DEMO.seller}
+                        subtitle="Show this code to the seller"
+                    />
+                    <PickupVerificationBarcode code={DEMO.pickupCode} />
+                    <Button
+                        variant={codeConfirmed ? 'success' : 'primary'}
+                        leftIcon={codeConfirmed ? 'check-circle' : 'shield-check-outline'}
+                        onPress={onToggleCodeConfirmed}
+                    >
+                        {codeConfirmed ? 'Seller confirmed the code' : 'Seller confirmed — mark verified'}
+                    </Button>
                 </>
             );
 

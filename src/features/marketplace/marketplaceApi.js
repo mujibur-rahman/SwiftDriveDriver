@@ -22,6 +22,19 @@ export const marketplaceApi = apiSlice.injectEndpoints({
         }),
 
         /**
+         * Marketplace-specific — the seller visually/scan-confirms the
+         * buyer's verification code (shown as a barcode) matches. This is
+         * an anti-fraud check, separate from item-condition verification.
+         */
+        confirmPickupCode: builder.mutation({
+            query: ({ orderId, code }) => ({
+                url: `/marketplace/${orderId}/confirm-code`,
+                method: 'POST',
+                body: { code },
+            }),
+        }),
+
+        /**
          * Marketplace-specific — no barcode exists for a used item, so
          * pickup is verified with a photo instead (see ItemPhotoCompare in
          * MarketplaceSheetBody). Logged server-side as a lightweight
@@ -80,6 +93,7 @@ export const marketplaceApi = apiSlice.injectEndpoints({
 export const {
     useAcceptMarketplaceOrderMutation,
     useRejectMarketplaceOrderMutation,
+    useConfirmPickupCodeMutation,
     useVerifyMarketplaceItemMutation,
     useCollectMarketplacePaymentMutation,
     useCompleteMarketplacePickupMutation,
