@@ -4,51 +4,12 @@ import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { DEMO } from '@/screens/main/marketplace/marketplaceDemo';
 import Button from '@/components/ui/Button';
 import StatRow from '@/components/ui/StatRow';
-// Reused directly — generic sender/recipient-style row, no delivery-type
-// specific content in it.
 import PlaceRow from '@/components/food/PlaceRow';
-
-/**
- * Compact photo slot — same visual language as gig's PhotoSlot (dashed
- * border until filled, solid + colored border once a photo exists) but
- * kept local here since only two screens need it right now. Promote to
- * components/ui/PhotoSlot.jsx if a third flow needs the same shape.
- */
-function PhotoSlot({ label, uri, onPress, accentHex, isDark, locked }) {
-    return (
-        <TouchableOpacity
-            onPress={locked ? undefined : onPress}
-            activeOpacity={locked ? 1 : 0.8}
-            style={{
-                height: 140,
-                borderRadius: 14,
-                borderWidth: 1.5,
-                borderColor: uri ? accentHex : (isDark ? '#1E3A5F' : '#E2E8F0'),
-                borderStyle: uri ? 'solid' : 'dashed',
-                backgroundColor: isDark ? '#0A1628' : '#E8EEF5',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-                opacity: locked && !uri ? 0.6 : 1,
-            }}
-        >
-            {uri ? (
-                <Image source={{ uri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-            ) : (
-                <>
-                    <Icon name="camera-outline" size={26} color={isDark ? '#7DD3FC' : '#64748B'} />
-                    <Text style={{ color: isDark ? '#7DD3FC' : '#64748B', fontSize: 11, marginTop: 4 }}>
-                        {label}
-                    </Text>
-                </>
-            )}
-        </TouchableOpacity>
-    );
-}
+import PhotoSlot from '@/components/ui/PhotoSlot';
+import Heading from '@/components/ui/Heading';
 
 export default function MarketplaceSheetBody({
     step,
-    primaryHex,
     warningHex,
     successHex,
     isDark,
@@ -76,7 +37,7 @@ export default function MarketplaceSheetBody({
                         badge={`#${DEMO.orderNumber}`}
                     />
                     <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-background-muted px-3 py-2.5">
-                        <View
+                        {/* <View
                             style={{
                                 width: 44,
                                 height: 44,
@@ -92,7 +53,18 @@ export default function MarketplaceSheetBody({
                             ) : (
                                 <Icon name="image-outline" size={20} color={isDark ? '#7DD3FC' : '#64748B'} />
                             )}
-                        </View>
+                        </View> */}
+                        <PhotoSlot
+                            uri={DEMO.itemPhotoUri}
+                            mode='display'
+                            height={44}
+                            width={44}
+                            rounded="lg"
+                            showBorder={false}
+                            resizeMode="cover"
+                            emptyIcon="image-outline"
+                            isDark={isDark}
+                        />
                         <View className="flex-1">
                             <Text className="text-sm font-inter-semibold text-foreground" numberOfLines={1}>
                                 {DEMO.itemTitle}
@@ -111,9 +83,7 @@ export default function MarketplaceSheetBody({
                         ]}
                     />
                     {routeLoading && (
-                        <Text className="text-xs font-inter text-foreground-muted text-center">
-                            Updating route…
-                        </Text>
+                        <Heading size="xs" align='center' subtitle="Updating route..." />
                     )}
                 </>
             );
@@ -149,11 +119,10 @@ export default function MarketplaceSheetBody({
                         subtitle={`Listed by ${DEMO.seller} on ${DEMO.listingSource}`}
                     />
                     <View className="flex-row gap-3">
-                        <View className="flex-1">
-                            <Text className="text-[10px] font-inter-semibold text-foreground-muted uppercase tracking-wider mb-1">
-                                Listing photo
-                            </Text>
-                            <View
+                        <View className="flex-1 gap-1">
+                            <Heading size="xs" subtitle="Listing photo" subtitleClassName='font-inter-semibold uppercase tracking-wider' />
+
+                            {/* <View
                                 style={{
                                     height: 100,
                                     borderRadius: 12,
@@ -168,26 +137,32 @@ export default function MarketplaceSheetBody({
                                 ) : (
                                     <Icon name="image-outline" size={22} color={isDark ? '#7DD3FC' : '#64748B'} />
                                 )}
-                            </View>
+                            </View> */}
+
+                            <PhotoSlot
+                                mode="display"
+                                uri={DEMO.itemPhotoUri}
+                                height={140}
+                                rounded="lg"
+                                resizeMode="cover"
+                                emptyIcon="image-outline"
+                            />
                         </View>
-                        <View className="flex-1">
-                            <Text className="text-[10px] font-inter-semibold text-foreground-muted uppercase tracking-wider mb-1">
-                                তোমার তোলা ছবি
-                            </Text>
+                        <View className="flex-1 gap-1">
+                            <Heading size="xs" subtitle="Take photo" subtitleClassName='font-inter-semibold uppercase tracking-wider' />
                             <PhotoSlot
                                 label="Take photo"
                                 uri={itemPhoto}
                                 onPress={takeItemPhoto}
                                 accentHex={successHex}
                                 isDark={isDark}
+                                resizeMode="cover"
                             />
                         </View>
                     </View>
                     <View className="flex-row items-start gap-2">
-                        <Icon name="information-outline" size={14} color={isDark ? '#7DD3FC' : '#64748B'} />
-                        <Text className="flex-1 text-xs font-inter text-foreground-muted">
-                            Item-টা listing-এর সাথে মিলছে কিনা নিশ্চিত করে তারপর ছবি তোলো — ভবিষ্যতে dispute হলে এই ছবিই প্রমাণ।
-                        </Text>
+                        <Icon name="information-outline" size={14} color={isDark ? '#7DD3FC' : '#64748B'} className='mt-1' />
+                        <Heading size="xs" subtitle="Ensure the item matches the listing before taking the photo — this photo will serve as proof in case of future disputes." />
                     </View>
                 </>
             );
@@ -289,9 +264,7 @@ export default function MarketplaceSheetBody({
                     >
                         {paymentCollected ? 'Payment collected' : 'Mark payment collected'}
                     </Button>
-                    <Text className="text-[10px] font-inter-semibold text-foreground-muted uppercase tracking-wider">
-                        Hand-off photo
-                    </Text>
+                    <Heading size="xs" subtitle="Hand-off photo" subtitleClassName='font-inter-semibold uppercase tracking-wider' />
                     <PhotoSlot
                         label="Photo of item with buyer"
                         uri={handoffPhoto}
@@ -311,9 +284,7 @@ export default function MarketplaceSheetBody({
                         title={DEMO.buyerName}
                         subtitle={DEMO.buyerAddress}
                     />
-                    <Text className="text-[10px] font-inter-semibold text-foreground-muted uppercase tracking-wider">
-                        Hand-off photo
-                    </Text>
+                    <Heading size="xs" subtitle="Hand-off photo" subtitleClassName='font-inter-semibold uppercase tracking-wider' />
                     <PhotoSlot
                         label="Photo of item with buyer"
                         uri={handoffPhoto}

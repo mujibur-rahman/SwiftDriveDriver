@@ -5,7 +5,6 @@ import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@/theme';
 import { DEMO } from '@/screens/main/gig/gigDemo';
-import { gigStyles as styles } from '@/screens/main/gig/gigStyles';
 import IconButton from '@/components/ui/IconButton';
 
 export default function GigMapPanel({
@@ -60,8 +59,8 @@ export default function GigMapPanel({
 
         <Marker coordinate={j.customerCoords} title={j.customerName}>
           <View
+            className="marker-circle"
             style={[
-              styles.markerCircle,
               {
                 backgroundColor: `${successHex}28`,
                 borderColor: successHex,
@@ -78,15 +77,15 @@ export default function GigMapPanel({
 
         <Marker coordinate={driverCoords} anchor={{ x: 0.5, y: 0.5 }}>
           <View
+            className="driver-dot"
             style={[
-              styles.driverDot,
               { backgroundColor: primaryHex, borderColor: '#fff' },
             ]}
           />
         </Marker>
       </MapView>
 
-      <View style={[styles.backBtn, { top: insets.top + 8, backgroundColor: cardBg }]}>
+      <View className="back-btn" style={[{ top: insets.top + 8, backgroundColor: cardBg }]}>
         <IconButton
           icon="arrow-left"
           size={42}
@@ -98,19 +97,20 @@ export default function GigMapPanel({
 
       {isNavigating && (
         <View
-          style={[styles.etaChip, { top: insets.top + 8, backgroundColor: cardBg }]}
+          className="eta-chip"
+          style={[{ top: insets.top + 8, backgroundColor: cardBg }]}
         >
           <View>
-            <Text style={[styles.etaTime, { color: textColor }]}>
+            <Text className="eta-time" style={[{ color: textColor }]}>
               {routeLoading ? '…' : etaDuration || j.durationToJob}
             </Text>
-            <Text style={styles.etaLabel}>ETA</Text>
+            <Text className="eta-label">ETA</Text>
           </View>
         </View>
       )}
 
       {isNavigating && (
-        <View style={[styles.navFab, { bottom: 360, backgroundColor: primaryHex }]}>
+        <View className="nav-fab" style={[{ bottom: 360, backgroundColor: primaryHex }]}>
           <IconButton
             icon="navigation-variant"
             size={52}

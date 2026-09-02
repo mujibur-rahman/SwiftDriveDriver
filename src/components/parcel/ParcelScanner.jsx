@@ -5,7 +5,6 @@ import {
     Text,
     Vibration,
     Platform,
-    StyleSheet,
     Alert,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -178,7 +177,6 @@ export default function ParcelScanner({ parcels = [], scannedIds = [], onScan })
             {!manualMode ? (
                 <View className="h-60 overflow-hidden rounded-2xl bg-black">
                     <CameraView
-                        style={StyleSheet.absoluteFill}
                         facing="back"
                         enableTorch={torch}
                         barcodeScannerSettings={{ barcodeTypes: BARCODE_TYPES }}

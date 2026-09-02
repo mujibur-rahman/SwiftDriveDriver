@@ -7,8 +7,9 @@ import SvgIcon from "@/components/ui/SvgIcon";
 
 const ServiceCard = ({ job, onPress, iconSize = 28, className = "" }) => {
   const navigation = useNavigation();
-  const { colors } = useTheme();
-  const primary = colors?.primary;
+  const { colors, isDark } = useTheme();
+  // const primary = colors?.primary;
+  const textColor = colors?.foreground ?? (isDark ? '#F0F9FF' : '#0F172A');
 
   const handlePress = () => {
     if (onPress) {
@@ -41,7 +42,7 @@ const ServiceCard = ({ job, onPress, iconSize = 28, className = "" }) => {
       accessibilityLabel={job?.title}
     >
       <View className="service-card-circle">
-        <SvgIcon name={job?.icon} size={iconSize} color={primary} />
+        <SvgIcon name={job?.icon} size={iconSize} color={textColor} />
       </View>
       <Text className="service-card-title" numberOfLines={2}>
         {job?.title}

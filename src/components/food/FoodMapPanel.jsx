@@ -5,7 +5,6 @@ import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@/theme';
 import { DEMO } from '@/screens/main/food/foodDemo';
-import { foodStyles as styles } from '@/screens/main/food/foodStyles';
 import IconButton from '@/components/ui/IconButton';
 
 export default function FoodMapPanel({
@@ -62,8 +61,8 @@ export default function FoodMapPanel({
 
                 <Marker coordinate={DEMO.restaurantCoords} title={DEMO.restaurant}>
                     <View
+                        className="marker-circle"
                         style={[
-                            styles.markerCircle,
                             {
                                 backgroundColor: `${warningHex}28`,
                                 borderColor: warningHex,
@@ -76,8 +75,8 @@ export default function FoodMapPanel({
 
                 <Marker coordinate={DEMO.customerCoords} title={DEMO.customerName}>
                     <View
+                        className="marker-circle"
                         style={[
-                            styles.markerCircle,
                             {
                                 backgroundColor: `${successHex}28`,
                                 borderColor: successHex,
@@ -90,8 +89,8 @@ export default function FoodMapPanel({
 
                 <Marker coordinate={driverCoords} anchor={{ x: 0.5, y: 0.5 }}>
                     <View
+                        className="driver-dot"
                         style={[
-                            styles.driverDot,
                             { backgroundColor: primaryHex, borderColor: '#fff' },
                         ]}
                     />
@@ -109,8 +108,8 @@ export default function FoodMapPanel({
 
             {isNavigating && (
                 <View
+                    className="eta-chip"
                     style={[
-                        styles.etaChip,
                         {
                             top: insets.top + 12,
                             backgroundColor: cardBg,
@@ -119,10 +118,10 @@ export default function FoodMapPanel({
                 >
                     <Icon name="clock-outline" size={14} color={primaryHex} />
                     <View style={{ marginLeft: 6 }}>
-                        <Text style={[styles.etaTime, { color: textColor }]}>
+                        <Text className="eta-time" style={[{ color: textColor }]}>
                             {etaDuration}
                         </Text>
-                        <Text style={styles.etaLabel}>{routeLoading ? '…' : 'ETA'}</Text>
+                        <Text className="eta-label">ETA</Text>
                     </View>
                 </View>
             )}
@@ -134,8 +133,8 @@ export default function FoodMapPanel({
                     iconSize={24}
                     color="#fff"
                     activeOpacity={0.85}
+                    className="nav-fab"
                     style={[
-                        styles.navFab,
                         {
                             bottom: 300 + insets.bottom,
                             backgroundColor: stepMeta.color,

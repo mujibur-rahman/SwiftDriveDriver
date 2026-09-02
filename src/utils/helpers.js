@@ -30,3 +30,13 @@ export function getDocumentsBannerProps({ missingCount = 0, pendingCount = 0 }) 
     message: "All documents approved",
   };
 }
+
+// convert points to path for svg
+export function pointsToPath(points) {
+  if (points.length === 0) return '';
+  const [first, ...rest] = points;
+  return (
+    `M${first.x.toFixed(1)},${first.y.toFixed(1)} ` +
+    rest.map((p) => `L${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
+  );
+}

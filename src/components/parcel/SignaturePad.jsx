@@ -1,32 +1,9 @@
 // src/components/parcel/SignaturePad.jsx
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { View, PanResponder, StyleSheet } from 'react-native';
+import { View, PanResponder } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { pointsToPath } from '@/utils/helpers';
 
-function pointsToPath(points) {
-    if (points.length === 0) return '';
-    const [first, ...rest] = points;
-    return (
-        `M${first.x.toFixed(1)},${first.y.toFixed(1)} ` +
-        rest.map((p) => `L${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')
-    );
-}
-
-/**
- * Finger-drawn signature capture. No native dependency — draws directly
- * with react-native-svg, which is already in package.json.
- *
- * Ref API:
- * - clear()     — wipes the pad
- * - isEmpty()   — true if nothing has been drawn
- * - getPaths()  — array of SVG path strings (send as "proof" to backend
- *                 alongside the delivery-complete mutation; a real app
- *                 could rasterize this to a PNG with react-native-view-shot
- *                 if the backend specifically needs an image file)
- *
- * Props:
- * - onChange?: (isSigned: boolean) => void — fires after each stroke ends
- */
 const SignaturePad = forwardRef(function SignaturePad(
     { height = 160, strokeColor = '#111', backgroundColor = 'transparent', onChange },
     ref,
@@ -77,7 +54,8 @@ const SignaturePad = forwardRef(function SignaturePad(
 
     return (
         <View
-            style={[styles.pad, { height, backgroundColor }]}
+            className="pad"
+            style={[{ height, backgroundColor }]}
             {...panResponder.panHandlers}
         >
             <Svg width="100%" height="100%">
@@ -105,15 +83,6 @@ const SignaturePad = forwardRef(function SignaturePad(
             </Svg>
         </View>
     );
-});
-
-const styles = StyleSheet.create({
-    pad: {
-        borderRadius: 16,
-        borderWidth: 1,
-        borderStyle: 'dashed',
-        overflow: 'hidden',
-    },
 });
 
 export default SignaturePad;

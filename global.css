@@ -44,7 +44,7 @@
   --font-instrument: "InstrumentSerif_400Regular";
   --font-instrument-italic: "InstrumentSerif_400Regular_Italic";
 
-  --spacing-0: 0px;
+  /* --spacing-0: 0px;
   --spacing-1: 4px;
   --spacing-2: 8px;
   --spacing-3: 12px;
@@ -62,7 +62,7 @@
   --spacing-18: 72px;
   --spacing-20: 80px;
   --spacing-24: 96px;
-  --spacing-30: 120px;
+  --spacing-30: 120px; */
 }
 
 /* 2) :root → REQUIRED for VariableContextProvider runtime override */
@@ -126,7 +126,7 @@
   }
 
   .service-card-title {
-    @apply px-0.5 text-center text-xs font-inter-medium leading-4 text-primary;
+    @apply px-0.5 text-center text-xs font-inter-medium leading-4 text-foreground;
   }
 
   .h1 {
@@ -135,5 +135,59 @@
 
   .sub {
     @apply text-base font-inter text-foreground-muted;
+  }
+
+  .pad {
+    @apply rounded-2xl border border-dashed overflow-hidden;
+  }
+
+  /* ── Gig map / active job sheet ───────────────────────────────── */
+
+  .marker-circle {
+    @apply h-11 w-11 items-center justify-center rounded-full border-[2.5px];
+  }
+
+  .driver-dot {
+    @apply h-4.5 w-4.5 rounded-full border-[3px];
+  }
+
+  .back-btn {
+    @apply absolute left-4 h-10.5 w-10.5 items-center justify-center shadow-md rounded-full;
+  }
+
+  .eta-chip {
+    @apply absolute right-4 flex-row items-center shadow-md rounded-[20px] px-3.5 py-2;
+  }
+
+  .eta-time {
+    @apply text-lg font-extrabold leading-5;
+  }
+
+  .eta-label {
+    @apply text-xs font-semibold tracking-[0.4px] text-foreground-muted;
+  }
+
+  .nav-fab {
+    @apply absolute right-4 h-13 w-13 items-center justify-center shadow-md rounded-full;
+  }
+
+  .bottom-sheet {
+    @apply absolute bottom-0 left-0 right-0 gap-3 border-t border-border px-5 pt-3 shadow-md rounded-t-3xl;
+  }
+
+  .drag-handle {
+    @apply mb-1 h-1 w-9 self-center rounded-full bg-foreground-muted/35;
+  }
+
+  .status-row {
+    @apply flex-row items-center justify-between border-l-[3px] pl-3;
+  }
+
+  .step-title {
+    @apply text-lg font-bold tracking-tight text-foreground;
+  }
+
+  .step-subtitle {
+    @apply mt-0.5 text-sm text-foreground-muted;
   }
 }

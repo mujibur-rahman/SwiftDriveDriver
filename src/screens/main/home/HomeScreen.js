@@ -15,6 +15,8 @@ import { setMarketplaceOrderStatus } from '@/features/marketplace/marketplaceSli
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { DARK_MAP_STYLE } from '@/utils/mapStyles';
+import { DEMO as GIG_DEMO } from '@/screens/main/gig/gigDemo';
+import { DEMO as MARKETPLACE_DEMO } from '@/screens/main/marketplace/marketplaceDemo';
 import LogoAvatar from '@/components/ui/LogoAvatar';
 import ServiceCard from '@/components/ServiceCard';
 import OnlineStatus from '@/components/OnlineStatus';
@@ -63,6 +65,20 @@ export default function HomeScreen() {
     const anyDeliveryModalVisible =
         foodModalVisible || parcelModalVisible || gigModalVisible || marketplaceModalVisible;
 
+    // Single source of truth for the Home map preview shown behind an
+    // incoming-request modal — covers all four request types instead of
+    // the old food/parcel-only ternary (which silently fell back to
+    // parcel's sender coords for gig and marketplace).
+    const previewPickup = foodModalVisible
+        ? { coords: DEMO_RESTAURANT_COORDS, title: "Hungry Jack's", icon: 'storefront-outline' }
+        : parcelModalVisible
+            ? { coords: DEMO_SENDER_COORDS, title: 'QuickShip Warehouse', icon: 'package-variant-closed' }
+            : gigModalVisible
+                ? { coords: GIG_DEMO.customerCoords, title: GIG_DEMO.title, icon: GIG_DEMO.categoryIcon || 'briefcase-outline' }
+                : marketplaceModalVisible
+                    ? { coords: MARKETPLACE_DEMO.sellerCoords, title: MARKETPLACE_DEMO.seller, icon: 'tag-outline' }
+                    : null;
+
     useEffect(() => {
         if (incomingRide && rideStatus === 'incoming') {
             const parent = navigation.getParent();
@@ -72,9 +88,9 @@ export default function HomeScreen() {
     }, [incomingRide, rideStatus, navigation]);
 
     useEffect(() => {
-        if (!anyDeliveryModalVisible || !mapRef.current) return;
+        if (!anyDeliveryModalVisible || !mapRef.current || !previewPickup) return;
         const driverPos = currentLocation ?? DEMO_DRIVER;
-        const pickup = foodModalVisible ? DEMO_RESTAURANT_COORDS : DEMO_SENDER_COORDS;
+        const pickup = previewPickup.coords;
         const midLat = (driverPos.latitude + pickup.latitude) / 2;
         const midLng = (driverPos.longitude + pickup.longitude) / 2;
         const deltaLat = Math.max(
@@ -96,7 +112,7 @@ export default function HomeScreen() {
                 600,
             );
         }, 300);
-    }, [anyDeliveryModalVisible, foodModalVisible, currentLocation]);
+    }, [anyDeliveryModalVisible, previewPickup, currentLocation]);
 
     const toggleOnline = async (val) => {
         dispatch(setOnlineStatus(val));
@@ -189,7 +205,7 @@ export default function HomeScreen() {
         <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
             <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
-            {anyDeliveryModalVisible && (
+            {anyDeliveryModalVisible && previewPickup && (
                 <MapView
                     ref={mapRef}
                     style={{ flex: 1 }}
@@ -197,14 +213,14 @@ export default function HomeScreen() {
                     showsUserLocation
                     showsMyLocationButton={false}
                     initialRegion={{
-                        ...(foodModalVisible ? DEMO_RESTAURANT_COORDS : DEMO_SENDER_COORDS),
+                        ...previewPickup.coords,
                         latitudeDelta: 0.028,
                         longitudeDelta: 0.028,
                     }}
                 >
                     <Marker
-                        coordinate={foodModalVisible ? DEMO_RESTAURANT_COORDS : DEMO_SENDER_COORDS}
-                        title={foodModalVisible ? "Hungry Jack's" : 'QuickShip Warehouse'}
+                        coordinate={previewPickup.coords}
+                        title={previewPickup.title}
                         description="Pickup location"
                     >
                         <View
@@ -220,7 +236,7 @@ export default function HomeScreen() {
                             }}
                         >
                             <Icon
-                                name={foodModalVisible ? 'storefront-outline' : 'package-variant-closed'}
+                                name={previewPickup.icon}
                                 size={22}
                                 color={warningHex}
                             />
@@ -228,10 +244,7 @@ export default function HomeScreen() {
                     </Marker>
                     {currentLocation && (
                         <Polyline
-                            coordinates={[
-                                currentLocation,
-                                foodModalVisible ? DEMO_RESTAURANT_COORDS : DEMO_SENDER_COORDS,
-                            ]}
+                            coordinates={[currentLocation, previewPickup.coords]}
                             strokeColor={primaryHex}
                             strokeWidth={3}
                             lineDashPattern={[8, 4]}

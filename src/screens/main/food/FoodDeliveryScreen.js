@@ -19,7 +19,6 @@ import { updateTodayStats } from '@/features/driver/driverSlice';
 import { useCompleteFoodDeliveryMutation } from '@/features/food/foodApi';
 import { useDirections } from '@/hooks/useDirections';
 import { DEMO, DEMO_DRIVER } from '@/screens/main/food/foodDemo';
-import { foodStyles as styles } from '@/screens/main/food/foodStyles';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import FoodMapPanel from '@/components/food/FoodMapPanel';
@@ -329,8 +328,8 @@ export default function FoodDeliveryScreen({ navigation, route }) {
             />
 
             <Animated.View
+                className='bottom-sheet'
                 style={[
-                    styles.bottomSheet,
                     {
                         paddingBottom: insets.bottom + 16,
                         backgroundColor: isDark ? '#0D1E32' : '#FFFFFF',
@@ -340,21 +339,21 @@ export default function FoodDeliveryScreen({ navigation, route }) {
                     },
                 ]}
             >
-                <View style={styles.dragHandle} />
+                <View className="drag-handle" />
 
-                <View style={[styles.statusRow, { borderLeftColor: stepMeta.color }]}>
+                <View className='status-row' style={[{ borderLeftColor: stepMeta.color }]}>
                     <View className="flex-1 pr-2">
                         <Text
+                            className='step-title'
                             style={[
-                                styles.stepTitle,
                                 { color: isDark ? '#F0F9FF' : '#0F172A' },
                             ]}
                         >
                             {stepMeta.title}
                         </Text>
                         <Text
+                            className='step-subtitle'
                             style={[
-                                styles.stepSubtitle,
                                 { color: isDark ? '#7DD3FC' : '#64748B' },
                             ]}
                             numberOfLines={2}

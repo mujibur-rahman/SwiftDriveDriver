@@ -34,7 +34,6 @@ import {
   getJobTotal,
   formatMoney,
 } from '@/screens/main/gig/gigDemo';
-import { gigStyles as styles } from '@/screens/main/gig/gigStyles';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import GigMapPanel from '@/components/gig/GigMapPanel';
@@ -201,7 +200,7 @@ export default function GigJobScreen({ navigation, route }) {
   };
 
   const pingStatus = (status) => {
-    updateStatus({ orderId: job.orderNumber, status }).catch(() => {});
+    updateStatus({ orderId: job.orderNumber, status }).catch(() => { });
   };
 
   const onStartNavigation = () => {
@@ -415,8 +414,8 @@ export default function GigJobScreen({ navigation, route }) {
       />
 
       <Animated.View
+        className='bottom-sheet'
         style={[
-          styles.bottomSheet,
           {
             paddingBottom: insets.bottom + 16,
             backgroundColor: isDark ? '#0D1E32' : '#FFFFFF',
@@ -426,21 +425,21 @@ export default function GigJobScreen({ navigation, route }) {
           },
         ]}
       >
-        <View style={styles.dragHandle} />
+        <View className='drag-handle' />
 
-        <View style={[styles.statusRow, { borderLeftColor: stepMeta.color }]}>
+        <View className='status-row' style={[{ borderLeftColor: stepMeta.color }]}>
           <View className="flex-1 pr-2">
             <Text
+              className='step-title'
               style={[
-                styles.stepTitle,
                 { color: isDark ? '#F0F9FF' : '#0F172A' },
               ]}
             >
               {stepMeta.title}
             </Text>
             <Text
+              className='step-subtitle'
               style={[
-                styles.stepSubtitle,
                 { color: isDark ? '#7DD3FC' : '#64748B' },
               ]}
               numberOfLines={2}

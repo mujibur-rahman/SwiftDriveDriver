@@ -5,8 +5,6 @@ import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@/theme';
 import { DEMO } from '@/screens/main/marketplace/marketplaceDemo';
-// Reused as-is — same generic marker/chip/FAB shapes as gig & parcel.
-import { gigStyles as styles } from '@/screens/main/gig/gigStyles';
 import IconButton from '@/components/ui/IconButton';
 
 export default function MarketplaceMapPanel({
@@ -63,8 +61,8 @@ export default function MarketplaceMapPanel({
 
                 <Marker coordinate={j.sellerCoords} title={j.seller}>
                     <View
+                        className="marker-circle"
                         style={[
-                            styles.markerCircle,
                             { backgroundColor: `${warningHex}28`, borderColor: warningHex },
                         ]}
                     >
@@ -74,8 +72,8 @@ export default function MarketplaceMapPanel({
 
                 <Marker coordinate={j.buyerCoords} title={j.buyerName}>
                     <View
+                        className="marker-circle"
                         style={[
-                            styles.markerCircle,
                             { backgroundColor: `${successHex}28`, borderColor: successHex },
                         ]}
                     >
@@ -85,12 +83,13 @@ export default function MarketplaceMapPanel({
 
                 <Marker coordinate={driverCoords} anchor={{ x: 0.5, y: 0.5 }}>
                     <View
-                        style={[styles.driverDot, { backgroundColor: primaryHex, borderColor: '#fff' }]}
+                        className="driver-dot"
+                        style={[{ backgroundColor: primaryHex, borderColor: '#fff' }]}
                     />
                 </Marker>
             </MapView>
 
-            <View style={[styles.backBtn, { top: insets.top + 12, backgroundColor: cardBg }]}>
+            <View className="back-btn" style={[{ top: insets.top + 12, backgroundColor: cardBg }]}>
                 <IconButton
                     icon="arrow-left"
                     size={42}
@@ -101,18 +100,18 @@ export default function MarketplaceMapPanel({
             </View>
 
             {isNavigating && (
-                <View style={[styles.etaChip, { top: insets.top + 12, backgroundColor: cardBg }]}>
+                <View className="eta-chip" style={[{ top: insets.top + 12, backgroundColor: cardBg }]}>
                     <View>
-                        <Text style={[styles.etaTime, { color: textColor }]}>
+                        <Text className="eta-time" style={[{ color: textColor }]}>
                             {routeLoading ? '…' : etaDuration}
                         </Text>
-                        <Text style={styles.etaLabel}>ETA</Text>
+                        <Text className="eta-label">ETA</Text>
                     </View>
                 </View>
             )}
 
             {isNavigating && routeTarget && (
-                <View style={[styles.navFab, { bottom: 320, backgroundColor: stepMeta?.color || primaryHex }]}>
+                <View className="nav-fab" style={[{ bottom: 320, backgroundColor: stepMeta?.color || primaryHex }]}>
                     <IconButton
                         icon="navigation-variant"
                         size={52}

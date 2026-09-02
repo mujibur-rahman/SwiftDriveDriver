@@ -4,14 +4,13 @@ import React from 'react';
 import {
   View,
   Text,
-  Image,
-  TouchableOpacity,
 } from 'react-native';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
 import { DEMO, formatMoney, getJobTotal } from '@/screens/main/gig/gigDemo';
 import Button from '@/components/ui/Button';
 import AppTextInput from '@/components/ui/AppTextInput';
 import Checklist from '@/components/ui/Checklist';
+import PhotoSlot from '@/components/ui/PhotoSlot';
 
 export default function GigSheetBody({
   step,
@@ -80,49 +79,6 @@ export default function GigSheetBody({
         {j.customerAddress}
       </Text>
     </View>
-  );
-
-  /**
-   * Photo preview slot.
-   * Uses resizeMode="contain" so portrait camera shots are not
-   * aggressively center-cropped inside a wide strip (unlike profile
-   * avatar which intentionally uses aspect [1,1] + allowsEditing).
-   */
-  const PhotoSlot = ({ label, uri, onPress, required, locked, tall }) => (
-    <TouchableOpacity
-      onPress={locked ? undefined : onPress}
-      activeOpacity={locked ? 1 : 0.8}
-      style={{
-        flex: tall ? undefined : 1,
-        width: tall ? '100%' : undefined,
-        height: tall ? 180 : 140,
-        borderRadius: 14,
-        borderWidth: 1.5,
-        borderColor: uri ? successHex : border,
-        borderStyle: uri ? 'solid' : 'dashed',
-        backgroundColor: isDark ? '#0A1628' : '#E8EEF5',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        opacity: locked && !uri ? 0.6 : 1,
-      }}
-    >
-      {uri ? (
-        <Image
-          source={{ uri }}
-          style={{ width: '100%', height: '100%' }}
-          resizeMode="contain"
-        />
-      ) : (
-        <>
-          <Icon name="camera-outline" size={26} color={muted} />
-          <Text style={{ color: muted, fontSize: 11, marginTop: 4 }}>
-            {label}
-            {required ? ' *' : ''}
-          </Text>
-        </>
-      )}
-    </TouchableOpacity>
   );
 
   // ── accepted: Job Accepted – Go to location ─────────────────────────────
