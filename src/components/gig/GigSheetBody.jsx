@@ -172,7 +172,8 @@ export default function GigSheetBody({
           uri={arrivalPhoto}
           onPress={takeArrivalPhoto}
           required
-          tall
+          resizeMode='contain'
+          isDark={isDark}
         />
       </>
     );
@@ -196,6 +197,8 @@ export default function GigSheetBody({
           uri={beforePhoto}
           onPress={takeBeforePhoto}
           required
+          resizeMode='contain'
+          isDark={isDark}
           tall
         />
         <Button
@@ -294,12 +297,13 @@ export default function GigSheetBody({
           Before photo is already attached. Take an after photo to submit.
         </Text>
         <View className="flex-row gap-3">
-          <PhotoSlot label="Before" uri={beforePhoto} locked required />
+          <PhotoSlot label="Before" uri={beforePhoto} locked required isDark={isDark} />
           <PhotoSlot
             label="After"
             uri={afterPhoto}
             onPress={takeAfterPhoto}
             required
+            isDark={isDark}
           />
         </View>
         {notes ? (
