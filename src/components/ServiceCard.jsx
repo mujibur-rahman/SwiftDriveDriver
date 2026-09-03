@@ -25,13 +25,21 @@ const ServiceCard = ({ job, onPress, iconSize = 28, className = "" }) => {
     if (job?.id === "3" || job?.title === "Gig jobs") {
       navigation.navigate("GigJob");
     }
-
+    if (job?.id === "5" || job?.title === "Shop for me") {
+      navigation.navigate("ShopDelivery");
+    }
     if (job?.id === "6" || job?.title === "Marketplace pickup") {
       navigation.navigate("MarketplacePickup");
     }
     if (job?.id === "4" || job?.title === "Parcel delivery") {
       navigation.navigate("ParcelDelivery");
     }
+    // if (job?.id === "7" || job?.title === "Car insurance") {
+    //   navigation.navigate("CarInsurance");
+    // }
+    // if (job?.id === "8" || job?.title === "Car rental") {
+    //   navigation.navigate("CarRental");
+    // }
   };
 
   return (

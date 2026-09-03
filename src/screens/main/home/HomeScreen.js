@@ -12,11 +12,13 @@ import { setFoodOrderStatus } from '@/features/food/foodSlice';
 import { setParcelOrderStatus } from '@/features/parcel/parcelSlice';
 import { setGigOrderStatus } from '@/features/gig/gigSlice';
 import { setMarketplaceOrderStatus } from '@/features/marketplace/marketplaceSlice';
+import { setShopOrderStatus } from '@/features/shop/shopSlice';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { DARK_MAP_STYLE } from '@/utils/mapStyles';
 import { DEMO as GIG_DEMO } from '@/screens/main/gig/gigDemo';
 import { DEMO as MARKETPLACE_DEMO } from '@/screens/main/marketplace/marketplaceDemo';
+import { DEMO as SHOP_DEMO } from '@/screens/main/shop/shopDemo';
 import LogoAvatar from '@/components/ui/LogoAvatar';
 import ServiceCard from '@/components/ServiceCard';
 import OnlineStatus from '@/components/OnlineStatus';
@@ -26,6 +28,7 @@ import IncomingFoodDeliveryModal from '@/components/food/IncomingFoodDeliveryMod
 import IncomingParcelDeliveryModal from '@/components/parcel/IncomingParcelDeliveryModal';
 import IncomingGigJobModal from '@/components/gig/IncomingGigJobModal';
 import IncomingMarketplacePickupModal from '@/components/marketplace/IncomingMarketplacePickupModal';
+import IncomingShopOrderModal from '@/components/shop/IncomingShopOrderModal';
 import IncomingRequestRow from '@/components/ui/IncomingRequestRow';
 
 const DEMO_RESTAURANT_COORDS = { latitude: -33.8842, longitude: 151.2101 };
@@ -62,8 +65,9 @@ export default function HomeScreen() {
     const [parcelModalVisible, setParcelModalVisible] = useState(false);
     const [gigModalVisible, setGigModalVisible] = useState(false);
     const [marketplaceModalVisible, setMarketplaceModalVisible] = useState(false);
+    const [shopModalVisible, setShopModalVisible] = useState(false);
     const anyDeliveryModalVisible =
-        foodModalVisible || parcelModalVisible || gigModalVisible || marketplaceModalVisible;
+        foodModalVisible || parcelModalVisible || gigModalVisible || marketplaceModalVisible || shopModalVisible;
 
     // Single source of truth for the Home map preview shown behind an
     // incoming-request modal — covers all four request types instead of
@@ -77,7 +81,9 @@ export default function HomeScreen() {
                 ? { coords: GIG_DEMO.customerCoords, title: GIG_DEMO.title, icon: GIG_DEMO.categoryIcon || 'briefcase-outline' }
                 : marketplaceModalVisible
                     ? { coords: MARKETPLACE_DEMO.sellerCoords, title: MARKETPLACE_DEMO.seller, icon: 'tag-outline' }
-                    : null;
+                    : shopModalVisible
+                        ? { coords: SHOP_DEMO.storeCoords, title: SHOP_DEMO.store, icon: 'storefront-outline' }
+                        : null;
 
     useEffect(() => {
         if (incomingRide && rideStatus === 'incoming') {
@@ -199,6 +205,24 @@ export default function HomeScreen() {
         const parent = navigation.getParent();
         if (parent) parent.navigate('MarketplacePickup');
         else navigation.navigate('MarketplacePickup');
+    };
+
+    const openShopModal = () => {
+        dispatch(setShopOrderStatus('incoming'));
+        setShopModalVisible(true);
+    };
+
+    const onShopDecline = () => {
+        setShopModalVisible(false);
+        dispatch(setShopOrderStatus('idle'));
+    };
+
+    const onShopAccept = () => {
+        setShopModalVisible(false);
+        dispatch(setShopOrderStatus('active'));
+        const parent = navigation.getParent();
+        if (parent) parent.navigate('ShopDelivery');
+        else navigation.navigate('ShopDelivery');
     };
 
     return (
@@ -344,6 +368,16 @@ export default function HomeScreen() {
                                         meta="$8.00"
                                         onPress={openMarketplaceModal}
                                     />
+
+                                    <View className="h-px bg-border mx-4" />
+                                    <IncomingRequestRow
+                                        icon="storefront-outline"
+                                        iconColor={successHex}
+                                        title="Shop for Me"
+                                        subtitle={`${SHOP_DEMO.store} · ${SHOP_DEMO.items.length} items`}
+                                        meta="$10.50"
+                                        onPress={openShopModal}
+                                    />
                                 </View>
                             </View>
                         )}
@@ -378,6 +412,11 @@ export default function HomeScreen() {
                 visible={marketplaceModalVisible}
                 onDecline={onMarketplaceDecline}
                 onAccept={onMarketplaceAccept}
+            />
+            <IncomingShopOrderModal
+                visible={shopModalVisible}
+                onDecline={onShopDecline}
+                onAccept={onShopAccept}
             />
         </View>
     );

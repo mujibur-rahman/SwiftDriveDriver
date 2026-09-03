@@ -25,6 +25,7 @@ import FoodDeliveryScreen from "@/screens/main/food/FoodDeliveryScreen";
 import ParcelDeliveryScreen from "@/screens/main/parcel/ParcelDeliveryScreen";
 import GigJobScreen from "@/screens/main/gig/GigJobScreen";
 import MarketplacePickupScreen from "@/screens/main/marketplace/MarketplacePickupScreen";
+import ShopDeliveryScreen from "@/screens/main/shop/ShopDeliveryScreen";
 import GigWaitingScreen from "@/screens/main/gig/GigWaitingScreen";
 import GigCompleteScreen from "@/screens/main/gig/GigCompleteScreen";
 import DeliverySummaryScreen from "@/screens/main/DeliverySummaryScreen";
@@ -217,6 +218,13 @@ export default function MainNavigator({ navigationRef }) {
         to the shared DeliverySummary like food/parcel do.
       */}
       <Stack.Screen name="MarketplacePickup" component={MarketplacePickupScreen} />
+      {/*
+        Shop for me has two navigation legs (store, then customer) plus an
+        in-between shopping/checkout stretch with no navigation at all —
+        closer to marketplace's shape than food's, so it also completes
+        straight to the shared DeliverySummary.
+      */}
+      <Stack.Screen name="ShopDelivery" component={ShopDeliveryScreen} />
       <Stack.Screen name="GigWaiting" component={GigWaitingScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="GigComplete" component={GigCompleteScreen} options={{ gestureEnabled: false }} />
       {/*
