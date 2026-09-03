@@ -89,7 +89,7 @@ export default function ShopSheetBody({
                     <View className="flex-row items-center justify-between rounded-xl bg-background-muted px-3.5 py-2.5">
                         <Text className="text-xs font-inter text-foreground-muted">Running total</Text>
                         <Text
-                            className="text-sm font-inter-bold"
+                            className="text-sm font-inter-bold text-foreground-muted"
                             style={{ color: runningTotal > budgetLimit ? warningHex : undefined }}
                         >
                             ${runningTotal.toFixed(2)} / ${budgetLimit.toFixed(2)}
