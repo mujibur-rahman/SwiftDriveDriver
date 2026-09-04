@@ -13,7 +13,7 @@ import { darkColors, lightColors, themeHex } from "@/theme/colors";
 import { store } from "@/store";
 import { driverApi } from "@/features/driver/driverApi";
 
-const THEME_STORAGE_KEY = "@swiftdrive_theme_preference";
+const THEME_STORAGE_KEY = "@zyro_theme_preference";
 
 /** @typedef {"system" | "light" | "dark"} ThemePreference */
 

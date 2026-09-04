@@ -13,12 +13,14 @@ import { setParcelOrderStatus } from '@/features/parcel/parcelSlice';
 import { setGigOrderStatus } from '@/features/gig/gigSlice';
 import { setMarketplaceOrderStatus } from '@/features/marketplace/marketplaceSlice';
 import { setShopOrderStatus } from '@/features/shop/shopSlice';
+import { setCarRentalOrderStatus } from '@/features/carRental/carRentalSlice';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { DARK_MAP_STYLE } from '@/utils/mapStyles';
 import { DEMO as GIG_DEMO } from '@/screens/main/gig/gigDemo';
 import { DEMO as MARKETPLACE_DEMO } from '@/screens/main/marketplace/marketplaceDemo';
 import { DEMO as SHOP_DEMO } from '@/screens/main/shop/shopDemo';
+import { DEMO_DELIVERY as CAR_RENTAL_DEMO } from '@/screens/main/carRental/carRentalDemo';
 import LogoAvatar from '@/components/ui/LogoAvatar';
 import ServiceCard from '@/components/ServiceCard';
 import OnlineStatus from '@/components/OnlineStatus';
@@ -29,6 +31,7 @@ import IncomingParcelDeliveryModal from '@/components/parcel/IncomingParcelDeliv
 import IncomingGigJobModal from '@/components/gig/IncomingGigJobModal';
 import IncomingMarketplacePickupModal from '@/components/marketplace/IncomingMarketplacePickupModal';
 import IncomingShopOrderModal from '@/components/shop/IncomingShopOrderModal';
+import IncomingCarRentalModal from '@/components/carRental/IncomingCarRentalModal';
 import IncomingRequestRow from '@/components/ui/IncomingRequestRow';
 
 const DEMO_RESTAURANT_COORDS = { latitude: -33.8842, longitude: 151.2101 };
@@ -66,8 +69,9 @@ export default function HomeScreen() {
     const [gigModalVisible, setGigModalVisible] = useState(false);
     const [marketplaceModalVisible, setMarketplaceModalVisible] = useState(false);
     const [shopModalVisible, setShopModalVisible] = useState(false);
+    const [carRentalModalVisible, setCarRentalModalVisible] = useState(false);
     const anyDeliveryModalVisible =
-        foodModalVisible || parcelModalVisible || gigModalVisible || marketplaceModalVisible || shopModalVisible;
+        foodModalVisible || parcelModalVisible || gigModalVisible || marketplaceModalVisible || shopModalVisible || carRentalModalVisible;
 
     // Single source of truth for the Home map preview shown behind an
     // incoming-request modal — covers all four request types instead of
@@ -83,7 +87,9 @@ export default function HomeScreen() {
                     ? { coords: MARKETPLACE_DEMO.sellerCoords, title: MARKETPLACE_DEMO.seller, icon: 'tag-outline' }
                     : shopModalVisible
                         ? { coords: SHOP_DEMO.storeCoords, title: SHOP_DEMO.store, icon: 'storefront-outline' }
-                        : null;
+                        : carRentalModalVisible
+                            ? { coords: CAR_RENTAL_DEMO.depotCoords, title: CAR_RENTAL_DEMO.depot, icon: 'car-side' }
+                            : null;
 
     useEffect(() => {
         if (incomingRide && rideStatus === 'incoming') {
@@ -223,6 +229,24 @@ export default function HomeScreen() {
         const parent = navigation.getParent();
         if (parent) parent.navigate('ShopDelivery');
         else navigation.navigate('ShopDelivery');
+    };
+
+    const openCarRentalModal = () => {
+        dispatch(setCarRentalOrderStatus('incoming'));
+        setCarRentalModalVisible(true);
+    };
+
+    const onCarRentalDecline = () => {
+        setCarRentalModalVisible(false);
+        dispatch(setCarRentalOrderStatus('idle'));
+    };
+
+    const onCarRentalAccept = () => {
+        setCarRentalModalVisible(false);
+        dispatch(setCarRentalOrderStatus('active'));
+        const parent = navigation.getParent();
+        if (parent) parent.navigate('CarRentalHandover');
+        else navigation.navigate('CarRentalHandover');
     };
 
     return (
@@ -378,6 +402,16 @@ export default function HomeScreen() {
                                         meta="$10.50"
                                         onPress={openShopModal}
                                     />
+
+                                    <View className="h-px bg-border mx-4" />
+                                    <IncomingRequestRow
+                                        icon="car-side"
+                                        iconColor={primaryHex}
+                                        title="Car Rental Delivery"
+                                        subtitle={`${CAR_RENTAL_DEMO.vehicle} · ${CAR_RENTAL_DEMO.rentalPeriod}`}
+                                        meta={`$${CAR_RENTAL_DEMO.baseFare.toFixed(2)}`}
+                                        onPress={openCarRentalModal}
+                                    />
                                 </View>
                             </View>
                         )}
@@ -417,6 +451,11 @@ export default function HomeScreen() {
                 visible={shopModalVisible}
                 onDecline={onShopDecline}
                 onAccept={onShopAccept}
+            />
+            <IncomingCarRentalModal
+                visible={carRentalModalVisible}
+                onDecline={onCarRentalDecline}
+                onAccept={onCarRentalAccept}
             />
         </View>
     );

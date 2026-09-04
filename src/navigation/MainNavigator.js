@@ -26,6 +26,7 @@ import ParcelDeliveryScreen from "@/screens/main/parcel/ParcelDeliveryScreen";
 import GigJobScreen from "@/screens/main/gig/GigJobScreen";
 import MarketplacePickupScreen from "@/screens/main/marketplace/MarketplacePickupScreen";
 import ShopDeliveryScreen from "@/screens/main/shop/ShopDeliveryScreen";
+import CarRentalScreen from "@/screens/main/carRental/CarRentalScreen";
 import GigWaitingScreen from "@/screens/main/gig/GigWaitingScreen";
 import GigCompleteScreen from "@/screens/main/gig/GigCompleteScreen";
 import DeliverySummaryScreen from "@/screens/main/DeliverySummaryScreen";
@@ -225,6 +226,12 @@ export default function MainNavigator({ navigationRef }) {
         straight to the shared DeliverySummary.
       */}
       <Stack.Screen name="ShopDelivery" component={ShopDeliveryScreen} />
+      {/*
+        Car Rental has two legs — delivery and collection — that arrive as
+        two SEPARATE jobs, days apart. Both use this one screen; job.phase
+        picks which step sequence and copy to show (see CarRentalScreen.js).
+      */}
+      <Stack.Screen name="CarRentalHandover" component={CarRentalScreen} />
       <Stack.Screen name="GigWaiting" component={GigWaitingScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="GigComplete" component={GigCompleteScreen} options={{ gestureEnabled: false }} />
       {/*

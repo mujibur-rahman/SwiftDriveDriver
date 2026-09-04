@@ -9,7 +9,7 @@ import parcelReducer from "@/features/parcel/parcelSlice";
 import gigReducer from "@/features/gig/gigSlice";
 import shopReducer from "@/features/shop/shopSlice";
 import marketplaceReducer from "@/features/marketplace/marketplaceSlice";
-import carRentalReducer from "@/features/car_rental/carRentalSlice";
+import carRentalReducer from "@/features/carRental/carRentalSlice";
 
 // inject endpoints register করতে side-effect import
 import "@/features/auth/authApi";
@@ -20,7 +20,7 @@ import "@/features/parcel/parcelApi";
 import "@/features/gig/gigApi";
 import "@/features/shop/shopApi";
 import "@/features/marketplace/marketplaceApi";
-import "@/features/car_rental/carRentalApi";
+import "@/features/carRental/carRentalApi";
 
 export const store = configureStore({
   reducer: {

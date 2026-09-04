@@ -37,9 +37,9 @@ const ServiceCard = ({ job, onPress, iconSize = 28, className = "" }) => {
     // if (job?.id === "7" || job?.title === "Car insurance") {
     //   navigation.navigate("CarInsurance");
     // }
-    // if (job?.id === "8" || job?.title === "Car rental") {
-    //   navigation.navigate("CarRental");
-    // }
+    if (job?.id === "8" || job?.title === "Car rental") {
+      navigation.navigate("CarRentalHandover");
+    }
   };
 
   return (

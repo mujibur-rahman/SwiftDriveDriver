@@ -115,7 +115,7 @@ export default function DriverProfileScreen({ navigation }) {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Check out ${driver?.name || "me"} on SwiftDrive Driver!`,
+        message: `Check out ${driver?.name || "me"} on Zyro Driver!`,
       });
     } catch (_) {
       // cancelled
@@ -357,7 +357,7 @@ export default function DriverProfileScreen({ navigation }) {
           </View>
         </View>
 
-        <Heading subtitle="SwiftDrive Driver v1.0.0" size="sm" align="center" className="mt-4" />
+        <Heading subtitle="Zyro Driver v1.0.0" size="sm" align="center" className="mt-4" />
       </ScrollView>
     </View>
   );

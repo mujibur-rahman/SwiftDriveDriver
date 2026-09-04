@@ -142,7 +142,7 @@ export default function ParcelScanner({ parcels = [], scannedIds = [], onScan })
                     Grant camera access
                 </Button>
                 <Text className="px-2 text-center text-[11px] font-inter text-foreground-muted">
-                    If nothing happens, enable Camera in Settings → Apps → SwiftDrive
+                    If nothing happens, enable Camera in Settings → Apps → Zyro
                     Driver. Simulators usually have no camera — use a real device or
                     manual entry.
                 </Text>
