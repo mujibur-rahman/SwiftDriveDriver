@@ -14,6 +14,7 @@ import { setGigOrderStatus } from '@/features/gig/gigSlice';
 import { setMarketplaceOrderStatus } from '@/features/marketplace/marketplaceSlice';
 import { setShopOrderStatus } from '@/features/shop/shopSlice';
 import { setCarRentalOrderStatus } from '@/features/carRental/carRentalSlice';
+import { setCarInsuranceOrderStatus } from '@/features/carInsurance/carInsuranceSlice';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme';
 import { DARK_MAP_STYLE } from '@/utils/mapStyles';
@@ -21,6 +22,7 @@ import { DEMO as GIG_DEMO } from '@/screens/main/gig/gigDemo';
 import { DEMO as MARKETPLACE_DEMO } from '@/screens/main/marketplace/marketplaceDemo';
 import { DEMO as SHOP_DEMO } from '@/screens/main/shop/shopDemo';
 import { DEMO_DELIVERY as CAR_RENTAL_DEMO } from '@/screens/main/carRental/carRentalDemo';
+import { DEMO_PRE_POLICY as CAR_INSURANCE_DEMO } from '@/screens/main/carInsurance/carInsuranceDemo';
 import LogoAvatar from '@/components/ui/LogoAvatar';
 import ServiceCard from '@/components/ServiceCard';
 import OnlineStatus from '@/components/OnlineStatus';
@@ -32,6 +34,7 @@ import IncomingGigJobModal from '@/components/gig/IncomingGigJobModal';
 import IncomingMarketplacePickupModal from '@/components/marketplace/IncomingMarketplacePickupModal';
 import IncomingShopOrderModal from '@/components/shop/IncomingShopOrderModal';
 import IncomingCarRentalModal from '@/components/carRental/IncomingCarRentalModal';
+import IncomingInsuranceInspectionModal from '@/components/carInsurance/IncomingInsuranceInspectionModal';
 import IncomingRequestRow from '@/components/ui/IncomingRequestRow';
 
 const DEMO_RESTAURANT_COORDS = { latitude: -33.8842, longitude: 151.2101 };
@@ -70,8 +73,9 @@ export default function HomeScreen() {
     const [marketplaceModalVisible, setMarketplaceModalVisible] = useState(false);
     const [shopModalVisible, setShopModalVisible] = useState(false);
     const [carRentalModalVisible, setCarRentalModalVisible] = useState(false);
+    const [carInsuranceModalVisible, setCarInsuranceModalVisible] = useState(false);
     const anyDeliveryModalVisible =
-        foodModalVisible || parcelModalVisible || gigModalVisible || marketplaceModalVisible || shopModalVisible || carRentalModalVisible;
+        foodModalVisible || parcelModalVisible || gigModalVisible || marketplaceModalVisible || shopModalVisible || carRentalModalVisible || carInsuranceModalVisible;
 
     // Single source of truth for the Home map preview shown behind an
     // incoming-request modal — covers all four request types instead of
@@ -89,7 +93,9 @@ export default function HomeScreen() {
                         ? { coords: SHOP_DEMO.storeCoords, title: SHOP_DEMO.store, icon: 'storefront-outline' }
                         : carRentalModalVisible
                             ? { coords: CAR_RENTAL_DEMO.depotCoords, title: CAR_RENTAL_DEMO.depot, icon: 'car-side' }
-                            : null;
+                            : carInsuranceModalVisible
+                                ? { coords: CAR_INSURANCE_DEMO.ownerCoords, title: CAR_INSURANCE_DEMO.ownerName, icon: 'shield-check-outline' }
+                                : null;
 
     useEffect(() => {
         if (incomingRide && rideStatus === 'incoming') {
@@ -247,6 +253,24 @@ export default function HomeScreen() {
         const parent = navigation.getParent();
         if (parent) parent.navigate('CarRentalHandover');
         else navigation.navigate('CarRentalHandover');
+    };
+
+    const openCarInsuranceModal = () => {
+        dispatch(setCarInsuranceOrderStatus('incoming'));
+        setCarInsuranceModalVisible(true);
+    };
+
+    const onCarInsuranceDecline = () => {
+        setCarInsuranceModalVisible(false);
+        dispatch(setCarInsuranceOrderStatus('idle'));
+    };
+
+    const onCarInsuranceAccept = () => {
+        setCarInsuranceModalVisible(false);
+        dispatch(setCarInsuranceOrderStatus('active'));
+        const parent = navigation.getParent();
+        if (parent) parent.navigate('CarInsuranceInspection');
+        else navigation.navigate('CarInsuranceInspection');
     };
 
     return (
@@ -412,6 +436,16 @@ export default function HomeScreen() {
                                         meta={`$${CAR_RENTAL_DEMO.baseFare.toFixed(2)}`}
                                         onPress={openCarRentalModal}
                                     />
+
+                                    <View className="h-px bg-border mx-4" />
+                                    <IncomingRequestRow
+                                        icon="shield-check-outline"
+                                        iconColor={successHex}
+                                        title="Policy Inspection"
+                                        subtitle={`${CAR_INSURANCE_DEMO.vehicle} · ${CAR_INSURANCE_DEMO.policyNumber}`}
+                                        meta={`$${CAR_INSURANCE_DEMO.baseFare.toFixed(2)}`}
+                                        onPress={openCarInsuranceModal}
+                                    />
                                 </View>
                             </View>
                         )}
@@ -456,6 +490,11 @@ export default function HomeScreen() {
                 visible={carRentalModalVisible}
                 onDecline={onCarRentalDecline}
                 onAccept={onCarRentalAccept}
+            />
+            <IncomingInsuranceInspectionModal
+                visible={carInsuranceModalVisible}
+                onDecline={onCarInsuranceDecline}
+                onAccept={onCarInsuranceAccept}
             />
         </View>
     );

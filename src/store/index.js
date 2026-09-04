@@ -10,6 +10,7 @@ import gigReducer from "@/features/gig/gigSlice";
 import shopReducer from "@/features/shop/shopSlice";
 import marketplaceReducer from "@/features/marketplace/marketplaceSlice";
 import carRentalReducer from "@/features/carRental/carRentalSlice";
+import carInsuranceReducer from "@/features/carInsurance/carInsuranceSlice";
 
 // inject endpoints register করতে side-effect import
 import "@/features/auth/authApi";
@@ -21,6 +22,7 @@ import "@/features/gig/gigApi";
 import "@/features/shop/shopApi";
 import "@/features/marketplace/marketplaceApi";
 import "@/features/carRental/carRentalApi";
+import "@/features/carInsurance/carInsuranceApi";
 
 export const store = configureStore({
   reducer: {
@@ -35,6 +37,7 @@ export const store = configureStore({
     shop: shopReducer,
     marketplace: marketplaceReducer,
     carRental: carRentalReducer,
+    carInsurance: carInsuranceReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({ serializableCheck: false }).concat(

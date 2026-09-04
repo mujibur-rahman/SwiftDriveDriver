@@ -27,6 +27,7 @@ import GigJobScreen from "@/screens/main/gig/GigJobScreen";
 import MarketplacePickupScreen from "@/screens/main/marketplace/MarketplacePickupScreen";
 import ShopDeliveryScreen from "@/screens/main/shop/ShopDeliveryScreen";
 import CarRentalScreen from "@/screens/main/carRental/CarRentalScreen";
+import CarInsuranceScreen from "@/screens/main/carInsurance/CarInsuranceScreen";
 import GigWaitingScreen from "@/screens/main/gig/GigWaitingScreen";
 import GigCompleteScreen from "@/screens/main/gig/GigCompleteScreen";
 import DeliverySummaryScreen from "@/screens/main/DeliverySummaryScreen";
@@ -232,6 +233,12 @@ export default function MainNavigator({ navigationRef }) {
         picks which step sequence and copy to show (see CarRentalScreen.js).
       */}
       <Stack.Screen name="CarRentalHandover" component={CarRentalScreen} />
+      {/*
+        Car Insurance also has two job types (pre_policy, claim) that never
+        share an activeOrder, same pattern as Car Rental's two legs — one
+        screen, job.phase picks the step sequence.
+      */}
+      <Stack.Screen name="CarInsuranceInspection" component={CarInsuranceScreen} />
       <Stack.Screen name="GigWaiting" component={GigWaitingScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="GigComplete" component={GigCompleteScreen} options={{ gestureEnabled: false }} />
       {/*
